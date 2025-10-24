@@ -2,7 +2,14 @@
 namespace Controllers;
 
 require_once(__DIR__ . '/../config/config.php');
-require_once(__DIR__ . '/../core/Database.php'); 
+require_once(__DIR__ . '/../core/Database.php');
+// Require PHPMailer autoload (adjust path if your vendor dir is elsewhere)
+require_once(__DIR__ . '/../vendor/autoload.php');
+
+// Import PHPMailer classes
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
 
 use Core\Database;
 use PDO;
@@ -11,542 +18,356 @@ use PDOException;
 class AuthController {
     private $pdo;
 
-    public function __construct() {
+    public function __construct($start_session = true) {
         $this->pdo = Database::getInstance()->getConnection();
-        if (session_status() == PHP_SESSION_NONE) {
+        if ($start_session && session_status() == PHP_SESSION_NONE) {
             session_start();
         }
     }
 
-    /**
-     * Handles user registration, secure password hashing, and token bonuses.
-     */
+    // --- Email Sending Helper ---
+    private function sendEmail($toEmail, $toName, $subject, $htmlBody, $plainBody = '') {
+        $mail = new PHPMailer(true);
+        try {
+            // Server settings
+            // $mail->SMTPDebug = SMTP::DEBUG_SERVER; // Enable verbose debug output for testing
+            $mail->isSMTP();
+            $mail->Host       = SMTP_HOST;
+            $mail->SMTPAuth   = true;
+            $mail->Username   = SMTP_USERNAME;
+            $mail->Password   = SMTP_PASSWORD;
+            $mail->SMTPSecure = SMTP_SECURE; // e.g., PHPMailer::ENCRYPTION_STARTTLS
+            $mail->Port       = SMTP_PORT;
+
+            // Recipients
+            $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
+            $mail->addAddress($toEmail, $toName);
+
+            // Content
+            $mail->isHTML(true);
+            $mail->Subject = $subject;
+            $mail->Body    = $htmlBody;
+            $mail->AltBody = $plainBody ?: strip_tags($htmlBody);
+
+            $mail->send();
+            error_log("Email sent successfully to: " . $toEmail . " Subject: " . $subject);
+            return true;
+        } catch (Exception $e) {
+            error_log("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+            return false;
+        }
+    }
+
+    // --- Generate OTP / Token Helper ---
+    private function generateVerificationCode($length = 6) {
+        // Simple numeric OTP
+        return substr(str_shuffle(str_repeat('0123456789', $length)), 0, $length);
+    }
+     private function generateSecureToken($length = 32) {
+         // Secure random token for password reset
+         return bin2hex(random_bytes($length));
+     }
+
+     // --- Store Verification Code/Token ---
+     private function storeVerification($email, $userId, $codeOrToken, $type, $minutesValid = 15) {
+         $this->clearExpiredVerifications($email, $type); // Clear old ones first
+         $expires = date('Y-m-d H:i:s', strtotime("+$minutesValid minutes"));
+         try {
+             $stmt = $this->pdo->prepare(
+                 "INSERT INTO email_verifications (user_id, email, token, type, expires_at) VALUES (?, ?, ?, ?, ?)"
+             );
+             // Consider hashing $codeOrToken here for security if needed
+             return $stmt->execute([$userId, $email, $codeOrToken, $type, $expires]);
+         } catch (PDOException $e) {
+             error_log("Failed to store verification code for $email: " . $e->getMessage());
+             return false;
+         }
+     }
+
+     // --- Verify Code/Token (and delete on success) ---
+     private function verifyCode($emailOrToken, $code, $type) {
+         // Allow verifying by token directly for password reset
+         $field = ($type === 'password_reset') ? 'token' : 'email';
+         $value = ($type === 'password_reset') ? $emailOrToken : $emailOrToken; // Use token if type is reset
+         $codeToCheck = ($type === 'password_reset') ? $emailOrToken : $code; // Use token itself if type is reset
+
+          try {
+             $stmt = $this->pdo->prepare(
+                 "SELECT id, user_id, email FROM email_verifications
+                  WHERE $field = ? AND token = ? AND type = ? AND expires_at > NOW()"
+             );
+             $stmt->execute([$value, $codeToCheck, $type]);
+             $verification = $stmt->fetch();
+
+             if ($verification) {
+                 $this->deleteVerification($verification['id']); // Delete upon successful verification
+                 return $verification;
+             }
+             return false;
+         } catch (PDOException $e) {
+              error_log("Failed to verify code/token for $value ($type): " . $e->getMessage());
+              return false;
+         }
+     }
+
+      // --- Helpers to clean up used/expired codes ---
+      private function deleteVerification($verificationId) {
+          try {
+              $stmt = $this->pdo->prepare("DELETE FROM email_verifications WHERE id = ?");
+              $stmt->execute([$verificationId]);
+          } catch (PDOException $e) {
+               error_log("Failed to delete verification ID $verificationId: " . $e->getMessage());
+          }
+      }
+      private function clearExpiredVerifications($email = null, $type = null) {
+          try {
+              $sql = "DELETE FROM email_verifications WHERE expires_at <= NOW()";
+              $params = [];
+              if ($email) { $sql .= " AND email = ?"; $params[] = $email; }
+              if ($type) { $sql .= " AND type = ?"; $params[] = $type; }
+              $stmt = $this->pdo->prepare($sql);
+              $stmt->execute($params);
+          } catch (PDOException $e) {
+              error_log("Failed to clear expired verifications: " . $e->getMessage());
+          }
+      }
+
+    // --- Registration Process ---
+
+    /** Step 1: Request Registration OTP */
+    public function requestRegisterOtp($data) {
+        $email = filter_var($data['email'], FILTER_VALIDATE_EMAIL); $username = filter_var($data['username'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        if (!$email || !$username) { return ['success' => false, 'message' => 'Username and Email required.']; }
+        $stmt = $this->pdo->prepare("SELECT id FROM users WHERE (email = ? OR username = ?) AND is_email_verified = TRUE"); $stmt->execute([$email, $username]);
+        if ($stmt->fetch()) { return ['success' => false, 'message' => 'Username or Email already verified.']; }
+        $otp = $this->generateVerificationCode();
+        if (!$this->storeVerification($email, null, $otp, 'register_otp', 10)) { return ['success' => false, 'message' => 'Could not store code. Try again.']; }
+        $subject = "Your OTP for " . APP_NAME; $body = "<p>Hello " . htmlspecialchars($username) . ",</p><p>OTP: <strong>" . $otp . "</strong> (10 min validity)</p>";
+        if ($this->sendEmail($email, $username, $subject, $body)) { return ['success' => true, 'message' => 'OTP sent. Check inbox/spam.']; }
+        else { return ['success' => false, 'message' => 'Failed to send OTP email. Check server config.']; }
+    }
+
+    /** Step 2: Complete Registration with OTP */
     public function register($data) {
-        $email = filter_var($data['email'], FILTER_VALIDATE_EMAIL);
-        $username = filter_var($data['username'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $password = $data['password'] ?? '';
-        $refIdInput = $data['referrer_id'] ?? '';
-        $refId = null;
-
-        if (!empty($refIdInput)) {
-            $filteredId = filter_var($refIdInput, FILTER_VALIDATE_INT);
-            if ($filteredId !== false && $filteredId > 0) {
-                $refId = $filteredId;
-            }
-        }
-
-        if (!$email || !$username || empty($password) || strlen($password) < 6) {
-            return ['success' => false, 'message' => 'Invalid input. Check fields and password length (min 6).'];
-        }
-
-        $stmt = $this->pdo->prepare("SELECT id FROM users WHERE email = ? OR username = ?");
-        $stmt->execute([$email, $username]);
-        if ($stmt->fetch()) {
-            return ['success' => false, 'message' => 'Username or Email already taken.'];
-        }
-
-        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-        $initialTokens = KYC_BONUS;
-
+        $email = filter_var($data['email'], FILTER_VALIDATE_EMAIL); $username = filter_var($data['username'], FILTER_SANITIZE_FULL_SPECIAL_CHARS); $password = $data['password'] ?? ''; $otp = filter_var($data['otp'], FILTER_SANITIZE_NUMBER_INT); $refIdInput = $data['referrer_id'] ?? ''; $refId = null;
+        if (!empty($refIdInput)) { $fId = filter_var($refIdInput, FILTER_VALIDATE_INT); if ($fId !== false && $fId > 0) { $refId = $fId; } }
+        if (!$email || !$username || empty($password) || strlen($password) < 6 || empty($otp) || strlen($otp) !== 6) { return ['success' => false, 'message' => 'Invalid input. Check fields, password (min 6), OTP (6 digits).']; }
+        $verification = $this->verifyCode($email, $otp, 'register_otp'); if (!$verification) { return ['success' => false, 'message' => 'Invalid or expired OTP.']; }
+        $stmtCheck = $this->pdo->prepare("SELECT id FROM users WHERE email = ? OR username = ?"); $stmtCheck->execute([$email, $username]); if ($stmtCheck->fetch()) { return ['success' => false, 'message' => 'Username or Email already registered.']; }
+        $passwordHash = password_hash($password, PASSWORD_DEFAULT); $initialTokens = KYC_BONUS;
         try {
             $this->pdo->beginTransaction();
-            
-            $stmt = $this->pdo->prepare("INSERT INTO users (username, email, password_hash, tokens, kyc_claimed, referrer_id) VALUES (?, ?, ?, ?, TRUE, ?)");
-            $stmt->execute([$username, $email, $passwordHash, $initialTokens, $refId]);
-            $newUserId = $this->pdo->lastInsertId();
-
-            if ($refId !== null && $refId != $newUserId) { 
-                $stmtRef = $this->pdo->prepare("UPDATE users SET tokens = tokens + ? WHERE id = ?");
-                $stmtRef->execute([REFERRAL_BONUS, $refId]);
-            }
-            
-            // Log initial SIGNUP bonus
-            $stmtLogSignup = $this->pdo->prepare("INSERT INTO transactions (user_id, type, amount, status, details) VALUES (?, 'SIGNUP', ?, 'Complete', ?)");
-            $stmtLogSignup->execute([$newUserId, KYC_BONUS, 'KYC Verified Bonus']);
-
-            // Log REFERRAL bonus for the new user if applicable
-            if ($refId !== null && $refId != $newUserId) { 
-                 $stmtLogRef = $this->pdo->prepare("INSERT INTO transactions (user_id, type, amount, status, details) VALUES (?, 'REFERRAL', ?, 'Complete', ?)");
-                 $stmtLogRef->execute([$refId, REFERRAL_BONUS, 'Referral Reward for ID ' . $newUserId]);
-            }
-
+            $stmt = $this->pdo->prepare("INSERT INTO users (username, email, password_hash, tokens, kyc_claimed, referrer_id, is_email_verified) VALUES (?, ?, ?, ?, TRUE, ?, TRUE)");
+            $stmt->execute([$username, $email, $passwordHash, $initialTokens, $refId]); $newUserId = $this->pdo->lastInsertId(); if (!$newUserId) { $this->pdo->rollBack(); return ['success' => false, 'message' => 'Failed user creation.']; }
+            if ($refId !== null && $refId != $newUserId) { $sR = $this->pdo->prepare("UPDATE users SET tokens = tokens + ? WHERE id = ?"); $sR->execute([REFERRAL_BONUS, $refId]); }
+            $stmtLogSignup = $this->pdo->prepare("INSERT INTO transactions (user_id, type, amount, status, details) VALUES (?, 'SIGNUP', ?, 'Complete', ?)"); $stmtLogSignup->execute([$newUserId, $initialTokens, 'KYC & Email Verified Bonus']);
+            if ($refId !== null && $refId != $newUserId) { $sLR = $this->pdo->prepare("INSERT INTO transactions (user_id, type, amount, status, details) VALUES (?, 'REFERRAL', ?, 'Complete', ?)"); $sLR->execute([$refId, REFERRAL_BONUS, 'Referral Reward for ID ' . $newUserId]); }
             $this->pdo->commit();
-
-            $_SESSION['user_id'] = $newUserId;
-            $_SESSION['username'] = $username;
-            return ['success' => true, 'message' => 'Registration successful! You received ' . number_format(KYC_BONUS) . ' GALAXY tokens.'];
-
-        } catch (PDOException $e) {
-            $this->pdo->rollBack();
-            error_log("Registration failed: " . $e->getMessage());
-            // Check for the missing table error to provide the SQL schema hint if needed
-            if (strpos($e->getMessage(), 'transactions') !== false) {
-                 return ['success' => false, 'message' => 'Registration failed: DB Error (Schema Missing).'];
-            }
-            return ['success' => false, 'message' => 'Registration failed due to a database error.'];
-        }
+            $subjectWelcome = "Welcome to " . APP_NAME . "!"; $bodyWelcome = "<p>Hello " . htmlspecialchars($username) . ",</p><p>Welcome! Account active.</p><p>Bonus: " . number_format($initialTokens) . " GALAXY.</p><p>Login: <a href='" . SITE_URL . "'>" . SITE_URL . "</a></p>";
+            $this->sendEmail($email, $username, $subjectWelcome, $bodyWelcome);
+            $_SESSION['user_id'] = $newUserId; $_SESSION['username'] = $username;
+            return ['success' => true, 'message' => 'Registration complete! Welcome email sent. Bonus added.'];
+        } catch (PDOException $e) { if ($this->pdo->inTransaction()) { $this->pdo->rollBack(); } error_log("Registration failed: " . $e->getMessage()); return ['success' => false, 'message' => 'DB error during registration.']; }
     }
 
-    /**
-     * Handles user login using password verification.
-     */
+    // --- User Login ---
     public function login($data) {
-        $loginId = $data['login_id'] ?? '';
-        $password = $data['password'] ?? '';
-
-        if (empty($loginId) || empty($password)) {
-            return ['success' => false, 'message' => 'Please provide credentials.'];
-        }
-
-        $stmt = $this->pdo->prepare("SELECT id, username, password_hash, is_admin FROM users WHERE username = ? OR email = ?");
-        $stmt->execute([$loginId, $loginId]);
-        $user = $stmt->fetch();
-
-        if ($user && password_verify($password, $user['password_hash'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['is_admin'] = (bool)$user['is_admin']; // Set admin status in session
-            return ['success' => true, 'message' => 'Login successful! Redirecting...'];
-        } else {
-            return ['success' => false, 'message' => 'Invalid username/email or password.'];
-        }
-    }
-    
-    /**
-     * Checks if the current user is an administrator.
-     */
-    private function checkIsAdmin() {
-        return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
-    }
-
-    /**
-     * Admin Function: Gets aggregated system metrics.
-     */
-    public function getAdminOverview() {
-        if (!$this->checkIsAdmin()) {
-            return ['success' => false, 'message' => 'Access denied. Administrator privileges required.'];
-        }
-
+        $loginId = $data['login_id'] ?? ''; $password = $data['password'] ?? '';
+        if (empty($loginId) || empty($password)) { return ['success' => false, 'message' => 'Credentials required.']; }
         try {
-            // 1. Get total user count
-            $totalUsers = $this->pdo->query("SELECT COUNT(id) FROM users")->fetchColumn();
-            
-            // 2. Aggregate Financials (from TRANSACTIONS table)
-            // This isolates the SUM functions to the correct table.
-            $txMetrics = $this->pdo->query("
-                SELECT
-                    COALESCE(SUM(CASE WHEN type = 'PURCHASE' THEN amount ELSE 0 END), 0) AS total_purchased,
-                    COALESCE(SUM(CASE WHEN type = 'WITHDRAWAL' AND status = 'Processing' THEN amount ELSE 0 END), 0) AS total_pending_withdrawal
-                FROM transactions
-            ")->fetch();
-
-            // 3. Total Tokens in Circulation (from USERS table)
-            $tokenMetrics = $this->pdo->query("
-                SELECT COALESCE(SUM(tokens), 0) AS total_tokens_in_circulation
-                FROM users
-            ")->fetch();
-            
-            // Get recent activity (last 5 transactions from all users) - This query is fine.
-            $recentActivity = $this->pdo->query("
-                SELECT t.id, u.username, t.type, t.amount, t.status, t.created_at
-                FROM transactions t
-                JOIN users u ON t.user_id = u.id
-                ORDER BY t.created_at DESC
-                LIMIT 5
-            ")->fetchAll();
-
-            // Calculate total USD revenue (estimated: $0.001 per token purchased)
-            $totalRevenue = (float)$txMetrics['total_purchased'] * 0.001;
-
-            return [
-                'success' => true,
-                'data' => [
-                    'total_users' => (int)$totalUsers,
-                    'total_tokens_circulated' => number_format((float)$tokenMetrics['total_tokens_in_circulation'], 2),
-                    'total_revenue_usd' => number_format($totalRevenue, 2),
-                    'pending_withdrawal' => number_format(abs((float)$txMetrics['total_pending_withdrawal']), 2),
-                    'recent_activity' => $recentActivity
-                ]
-            ];
-
-        } catch (PDOException $e) {
-            error_log("Admin overview failed: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Database error while fetching overview.'];
-        }
-    }
-    
-    /**
-     * Admin Function: Processes a pending withdrawal.
-     */
-    public function processWithdrawal($data) {
-        if (!$this->checkIsAdmin()) {
-            return ['success' => false, 'message' => 'Access denied.'];
-        }
-        
-        $txId = filter_var($data['tx_id'], FILTER_VALIDATE_INT);
-        $status = filter_var($data['status'], FILTER_SANITIZE_STRING);
-
-        if (!$txId || !in_array($status, ['Complete', 'Failed'])) {
-            return ['success' => false, 'message' => 'Invalid transaction ID or status.'];
-        }
-
-        try {
-            $this->pdo->beginTransaction();
-            
-            $stmt = $this->pdo->prepare("SELECT status, amount, user_id FROM transactions WHERE id = ?");
-            $stmt->execute([$txId]);
-            $transaction = $stmt->fetch();
-
-            if (!$transaction || $transaction['status'] !== 'Processing') {
-                $this->pdo->rollBack();
-                return ['success' => false, 'message' => 'Transaction not found or already processed.'];
-            }
-
-            $amount = (float)$transaction['amount'];
-            $userId = $transaction['user_id'];
-
-            // If processing failed, refund the tokens
-            if ($status === 'Failed') {
-                $stmtRefund = $this->pdo->prepare("UPDATE users SET tokens = tokens + ? WHERE id = ?");
-                $stmtRefund->execute([abs($amount), $userId]);
-                $message = "Withdrawal failed and " . number_format(abs($amount), 2) . " GALAXY refunded to user.";
-            } else {
-                $message = "Withdrawal marked as complete and processed off-chain.";
-            }
-
-            // Update transaction status
-            $stmtUpdate = $this->pdo->prepare("UPDATE transactions SET status = ? WHERE id = ?");
-            $stmtUpdate->execute([$status, $txId]);
-            
-            $this->pdo->commit();
-            
-            return ['success' => true, 'message' => $message];
-
-        } catch (PDOException $e) {
-            $this->pdo->rollBack();
-            error_log("Process withdrawal failed: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Server error during processing.'];
-        }
-    }
-    
-    /**
-     * Admin Function: Fetches all pending withdrawals for the admin panel.
-     */
-    public function getPendingWithdrawals() {
-         if (!$this->checkIsAdmin()) {
-            return ['success' => false, 'message' => 'Access denied.'];
-        }
-        
-        try {
-            $stmt = $this->pdo->prepare("
-                SELECT 
-                    t.id, 
-                    u.username, 
-                    t.amount, 
-                    t.details, 
-                    t.created_at
-                FROM transactions t
-                JOIN users u ON t.user_id = u.id
-                WHERE t.type = 'WITHDRAWAL' AND t.status = 'Processing'
-                ORDER BY t.created_at ASC
-            ");
-            $stmt->execute();
-            $withdrawals = $stmt->fetchAll();
-            
-            // Format amounts for display
-            foreach ($withdrawals as &$w) {
-                $w['amount'] = number_format(abs((float)$w['amount']), 2);
-                $w['details'] = substr($w['details'], strpos($w['details'], 'To: ') + 4);
-                $w['created_at'] = date('M d, H:i', strtotime($w['created_at']));
-            }
-
-            return ['success' => true, 'withdrawals' => $withdrawals];
-
-        } catch (PDOException $e) {
-            error_log("Pending withdrawals failed: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Database error.'];
-        }
+            $stmt = $this->pdo->prepare("SELECT id, username, password_hash, is_email_verified FROM users WHERE username = ? OR email = ?");
+            $stmt->execute([$loginId, $loginId]); $user = $stmt->fetch();
+            if ($user && password_verify($password, $user['password_hash'])) {
+                 if (!$user['is_email_verified']) { return ['success' => false, 'message' => 'Email not verified. Check inbox or register again.']; }
+                session_regenerate_id(true); $_SESSION['user_id'] = $user['id']; $_SESSION['username'] = $user['username'];
+                return ['success' => true, 'message' => 'Login successful! Redirecting...'];
+            } else { return ['success' => false, 'message' => 'Invalid username/email or password.']; }
+        } catch (PDOException $e) { error_log("Login failed: " . $e->getMessage()); return ['success' => false, 'message' => 'DB error during login.']; }
     }
 
-    /**
-     * Admin Function: Fetches all users for management.
-     */
-    public function getAllUsers() {
-        if (!$this->checkIsAdmin()) {
-            return ['success' => false, 'message' => 'Access denied.'];
-        }
-        
-        try {
-            $stmt = $this->pdo->query("
-                SELECT 
-                    u.id, 
-                    u.username, 
-                    u.email, 
-                    u.tokens, 
-                    u.is_admin,
-                    u.created_at,
-                    (SELECT COUNT(id) FROM users WHERE referrer_id = u.id) AS referrals
-                FROM users u
-                ORDER BY u.created_at DESC
-            ");
-            $users = $stmt->fetchAll();
-            
-            // Format tokens for display
-            foreach ($users as &$user) {
-                $user['tokens'] = number_format((float)$user['tokens'], 2);
-                $user['is_admin'] = (bool)$user['is_admin'];
-                $user['created_at'] = date('M d, Y', strtotime($user['created_at']));
-            }
-
-            return ['success' => true, 'users' => $users];
-
-        } catch (PDOException $e) {
-            error_log("User list failed: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Database error.'];
-        }
-    }
-    
-    /**
-     * Admin Function: Updates a user's token balance (manual adjustment).
-     */
-    public function adjustUserBalance($data) {
-        if (!$this->checkIsAdmin()) {
-            return ['success' => false, 'message' => 'Access denied.'];
-        }
-        
-        $userId = filter_var($data['user_id'], FILTER_VALIDATE_INT);
-        $amount = filter_var($data['amount'], FILTER_VALIDATE_FLOAT); 
-        $details = filter_var($data['details'], FILTER_SANITIZE_STRING); 
-
-        if (!$userId || $amount === false || empty($details)) {
-            return ['success' => false, 'message' => 'Invalid user ID, amount, or details.'];
-        }
-
-        try {
-            $this->pdo->beginTransaction();
-
-            $stmtUpdate = $this->pdo->prepare("UPDATE users SET tokens = tokens + ? WHERE id = ?");
-            $stmtUpdate->execute([$amount, $userId]);
-            
-            // Log as a manual adjustment
-            $type = $amount >= 0 ? 'ADJUST_IN' : 'ADJUST_OUT';
-            $stmtLog = $this->pdo->prepare("INSERT INTO transactions (user_id, type, amount, status, details) VALUES (?, ?, ?, 'Complete', ?)");
-            $stmtLog->execute([$userId, $type, $amount, "Admin Adjustment: " . $details]);
-
-            $this->pdo->commit();
-            return ['success' => true, 'message' => "Balance for User $userId adjusted by " . number_format($amount, 2) . " GALAXY."];
-
-        } catch (PDOException $e) {
-            $this->pdo->rollBack();
-            error_log("Balance adjustment failed: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Database error during balance adjustment.'];
-        }
-    }
-
-    /**
-     * Handles updating the user's password.
-     */
-    public function updatePassword($data) {
-        if (!isset($_SESSION['user_id'])) {
-            return ['success' => false, 'message' => 'Authentication required.'];
-        }
-        
-        $userId = $_SESSION['user_id'];
-        $currentPassword = $data['current_password'] ?? '';
-        $newPassword = $data['new_password'] ?? '';
-        $confirmPassword = $data['confirm_password'] ?? '';
-
-        if (empty($currentPassword) || empty($newPassword) || $newPassword !== $confirmPassword || strlen($newPassword) < 6) {
-            return ['success' => false, 'message' => 'Invalid input. Check password match and length (min 6).'];
-        }
-
-        try {
-            // 1. Verify current password
-            $stmt = $this->pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
-            $stmt->execute([$userId]);
-            $user = $stmt->fetch();
-
-            if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
-                return ['success' => false, 'message' => 'Current password is incorrect.'];
-            }
-
-            // 2. Hash and update new password
-            $newPasswordHash = password_hash($newPassword, PASSWORD_DEFAULT);
-            $stmtUpdate = $this->pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
-            $stmtUpdate->execute([$newPasswordHash, $userId]);
-
-            return ['success' => true, 'message' => 'Password updated successfully!'];
-
-        } catch (PDOException $e) {
-            error_log("Password update failed: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Server error during password update.'];
-        }
-    }
-    
-    /**
-     * Fetches the user's current token balance.
-     */
-    public function getBalance() {
-        if (!isset($_SESSION['user_id'])) {
-            return ['success' => false, 'message' => 'Not authenticated.'];
-        }
-
-        $userId = $_SESSION['user_id'];
-        $stmt = $this->pdo->prepare("SELECT tokens FROM users WHERE id = ?");
-        $stmt->execute([$userId]);
-        $data = $stmt->fetch();
-
-        if ($data) {
-            return ['success' => true, 'balance' => number_format((float)$data['tokens'], 2, '.', ',')];
-        } else {
-            return ['success' => false, 'message' => 'User data not found.'];
-        }
-    }
-    
-    /**
-     * Fetches all user transactions for the Wallet history.
-     */
-    public function getTransactionHistory() {
-        if (!isset($_SESSION['user_id'])) {
-            return ['success' => false, 'message' => 'Not authenticated.'];
-        }
-        $userId = $_SESSION['user_id'];
-        
-        try {
-            $stmt = $this->pdo->prepare("SELECT type, amount, status, created_at, details FROM transactions WHERE user_id = ? ORDER BY created_at DESC");
-            $stmt->execute([$userId]);
-            $history = $stmt->fetchAll();
-            
-            // Format amounts for client-side display
-            foreach ($history as &$tx) {
-                 $tx['amount'] = number_format((float)abs($tx['amount']), 2, '.', ',');
-            }
-            
-            return ['success' => true, 'history' => $history];
-
-        } catch (PDOException $e) {
-            error_log("Transaction history fetch failed: " . $e->getMessage());
-            return ['success' => false, 'message' => 'DB Error: Transactions table missing. Run the required SQL schema.'];
-        }
-    }
-    
-    /**
-     * Fetches the user's referral statistics and history.
-     */
-    public function getReferralHistory() {
-        if (!isset($_SESSION['user_id'])) {
-            return ['success' => false, 'message' => 'Not authenticated.'];
-        }
-
-        $userId = $_SESSION['user_id'];
-        
-        // 1. Get Referral Statistics
-        $stmtStats = $this->pdo->prepare("SELECT COUNT(id) as total_referrals FROM users WHERE referrer_id = ?");
-        $stmtStats->execute([$userId]);
-        $stats = $stmtStats->fetch();
-        $totalReferrals = $stats['total_referrals'] ?? 0;
-        $totalEarnings = $totalReferrals * REFERRAL_BONUS;
-
-        // 2. Get Detailed Referral History
-        $stmtHistory = $this->pdo->prepare("SELECT username, created_at FROM users WHERE referrer_id = ? ORDER BY created_at DESC");
-        $stmtHistory->execute([$userId]);
-        $history = $stmtHistory->fetchAll();
-
-        return [
-            'success' => true,
-            'stats' => [
-                'total_referrals' => (int)$totalReferrals,
-                'total_earnings' => number_format($totalEarnings, 2, '.', ',')
-            ],
-            'history' => $history
-        ];
-    }
-    
-    /**
-     * Fetches non-sensitive user details and lifetime stats for the profile page.
-     */
-    public function getUserDetails() {
-        if (!isset($_SESSION['user_id'])) {
-            return ['success' => false, 'message' => 'Not authenticated.'];
-        }
-        $userId = $_SESSION['user_id'];
-        
-        try {
-            // 1. Fetch user details
-            $stmt = $this->pdo->prepare("
-                SELECT 
-                    u.id, 
-                    u.username, 
-                    u.email, 
-                    u.created_at, 
-                    u.referrer_id
-                FROM users u
-                WHERE u.id = ?
-            ");
-            $stmt->execute([$userId]);
-            $user = $stmt->fetch();
-
-            if (!$user) {
-                return ['success' => false, 'message' => 'User profile data not found.'];
-            }
-            
-            // 2. Aggregate Lifetime Metrics (using COALESCE to guarantee non-NULL results)
-            $stmtMetrics = $this->pdo->prepare("
-                SELECT 
-                    COALESCE(SUM(CASE WHEN type IN ('PURCHASE', 'SIGNUP', 'REFERRAL') THEN amount ELSE 0 END), 0) AS total_acquired_tokens,
-                    COALESCE(SUM(CASE WHEN type = 'REFERRAL' THEN amount ELSE 0 END), 0) AS total_ref_earned,
-                    COALESCE(COUNT(CASE WHEN type = 'PURCHASE' THEN 1 ELSE NULL END), 0) AS total_purchase_count
-                FROM transactions 
-                WHERE user_id = ?
-            ");
-            $stmtMetrics->execute([$userId]);
-            $metrics = $stmtMetrics->fetch();
-            
-            // 3. Fetch Recent Transactions
-            $stmtRecentTx = $this->pdo->prepare("
-                SELECT type, amount, status, created_at
-                FROM transactions 
-                WHERE user_id = ? 
-                ORDER BY created_at DESC 
-                LIMIT 5
-            ");
-            $stmtRecentTx->execute([$userId]);
-            $recentTransactions = $stmtRecentTx->fetchAll();
-
-            // Calculate final 'Tokens Acquired (Net)'
-            $totalAcquired = (float)($metrics['total_acquired_tokens']);
-            $totalRefEarned = (float)($metrics['total_ref_earned']);
-            $totalPurchases = (int)($metrics['total_purchase_count']);
-            
-            return [
-                'success' => true,
-                'details' => [
-                    'id' => $user['id'],
-                    'username' => $user['username'],
-                    'email' => $user['email'],
-                    'member_since' => $user['created_at'],
-                    'referrer_id' => $user['referrer_id'],
-                    'stats' => [
-                        'tokens_acquired' => number_format($totalAcquired, 2, '.', ','),
-                        'total_purchases' => $totalPurchases,
-                        'referral_earnings' => number_format($totalRefEarned, 2, '.', ',')
-                    ]
-                ],
-                'recent_transactions' => $recentTransactions
-            ];
-            
-        } catch (PDOException $e) {
-            error_log("Profile detail fetch failed: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Server error while fetching profile details.'];
-        }
-    }
-
-
-    /**
-     * Destroys the current session.
-     */
+    // --- User Logout ---
     public function logout() {
-        session_destroy();
+        session_unset(); session_destroy();
         return ['success' => true, 'message' => 'Logged out successfully.'];
     }
-}
+
+    // --- Update Password (Profile) ---
+    public function updatePassword($data) {
+        if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Auth required.']; }
+        $userId = $_SESSION['user_id']; $currentPassword = $data['current_password'] ?? ''; $newPassword = $data['new_password'] ?? ''; $confirmPassword = $data['confirm_password'] ?? '';
+        if (empty($currentPassword) || empty($newPassword) || $newPassword !== $confirmPassword || strlen($newPassword) < 6) { return ['success' => false, 'message' => 'Invalid input. Check passwords (min 6).']; }
+        try {
+            $stmt = $this->pdo->prepare("SELECT password_hash FROM users WHERE id = ?"); $stmt->execute([$userId]); $user = $stmt->fetch();
+            if (!$user || !password_verify($currentPassword, $user['password_hash'])) { return ['success' => false, 'message' => 'Current password incorrect.']; }
+            $newPasswordHash = password_hash($newPassword, PASSWORD_DEFAULT);
+            $stmtUpdate = $this->pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?"); $stmtUpdate->execute([$newPasswordHash, $userId]);
+            return ['success' => true, 'message' => 'Password updated!'];
+        } catch (PDOException $e) { error_log("Password update failed: " . $e->getMessage()); return ['success' => false, 'message' => 'Server error updating password.']; }
+    }
+
+    // --- Forgot Password Process ---
+
+    /** Step 1: Request Password Reset Link */
+    public function requestPasswordReset($data) {
+        $email = filter_var($data['email'], FILTER_VALIDATE_EMAIL);
+        if (!$email) { return ['success' => false, 'message' => 'Invalid email.']; }
+        try {
+            $stmt = $this->pdo->prepare("SELECT id, username FROM users WHERE email = ? AND is_email_verified = TRUE"); $stmt->execute([$email]); $user = $stmt->fetch();
+            if ($user) {
+                $token = $this->generateSecureToken();
+                if ($this->storeVerification($email, $user['id'], $token, 'password_reset', 60)) {
+                    $resetLink = SITE_URL . 'reset_password.php?token=' . urlencode($token); $subject = "Password Reset - " . APP_NAME;
+                    $body = "<p>Hello " . htmlspecialchars($user['username']) . ",</p><p>Reset link (valid 60 min):</p><p><a href='" . $resetLink . "'>" . $resetLink . "</a></p><p>Ignore if not requested.</p>";
+                    $this->sendEmail($email, $user['username'], $subject, $body);
+                } else { error_log("Failed store reset token for $email"); }
+            } return ['success' => true, 'message' => 'If account exists, reset link sent.']; // Security
+        } catch (PDOException $e) { error_log("Reset request DB error: " . $e->getMessage()); return ['success' => true, 'message' => 'If account exists, reset link sent.']; }
+    }
+
+    /** Step 2: Verify Reset Token (Used by reset_password.php) */
+     public function verifyResetToken($token) {
+        if (empty($token)) return null;
+        try { $stmt = $this->pdo->prepare("SELECT id, email, user_id FROM email_verifications WHERE token = ? AND type = 'password_reset' AND expires_at > NOW()"); $stmt->execute([$token]); return $stmt->fetch(); }
+        catch (PDOException $e) { error_log("Verify reset token failed: " . $e->getMessage()); return null; }
+     }
+
+    /** Step 3: Reset Password using Token (Called by reset_password.php form) */
+    public function resetPasswordWithToken($data) {
+        $token = $data['token'] ?? ''; $newPassword = $data['new_password'] ?? ''; $confirmPassword = $data['confirm_password'] ?? '';
+        if (empty($token) || empty($newPassword) || $newPassword !== $confirmPassword || strlen($newPassword) < 6) { return ['success' => false, 'message' => 'Invalid input. Check token, passwords (min 6).']; }
+        $verification = $this->verifyCode($token, $token, 'password_reset'); // Verifies token and DELETES if valid
+        if (!$verification || !$verification['user_id']) { return ['success' => false, 'message' => 'Invalid or expired reset token.']; }
+        $userId = $verification['user_id'];
+        try { $newPasswordHash = password_hash($newPassword, PASSWORD_DEFAULT); $stmtUpdate = $this->pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?"); $updated = $stmtUpdate->execute([$newPasswordHash, $userId]);
+            if ($updated) { return ['success' => true, 'message' => 'Password reset successful!']; }
+            else { return ['success' => false, 'message' => 'Failed to update password.']; }
+        } catch (PDOException $e) { error_log("Reset password DB error: " . $e->getMessage()); return ['success' => false, 'message' => 'DB error resetting password.']; }
+    }
+
+    // --- Payment Flow (NowPayments - Redirect Method + Email) ---
+
+    /** [REDIRECT METHOD] Creates NowPayments invoice WITHOUT currency spec */
+    public function createNowPaymentsInvoice($data) {
+         if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Auth required.']; }
+         $userId = $_SESSION['user_id']; $usdAmount = filter_var($data['usd_amount'], FILTER_VALIDATE_FLOAT); $bonusPercent = filter_var($data['bonus_percent'], FILTER_VALIDATE_FLOAT);
+         if (!$usdAmount || $usdAmount <= 0) { return ['success' => false, 'message' => 'Invalid amount.']; }
+         $baseTokens = $usdAmount * TOKEN_RATE; $totalTokens = $baseTokens + ($baseTokens * $bonusPercent);
+         $orderId = $userId . '-' . time(); $description = "Purchase of " . number_format($totalTokens) . " GALAXY tokens";
+         $transaction_id = null; $payment_record_id = null;
+         try {
+             $this->pdo->beginTransaction();
+             // 1. Insert into transactions
+             $stmtTx = $this->pdo->prepare("INSERT INTO transactions (user_id, type, amount, status, details) VALUES (?, 'PURCHASE', ?, 'Pending', ?)"); $stmtTx->execute([$userId, $totalTokens, $orderId]); $transaction_id = $this->pdo->lastInsertId();
+             if (!$transaction_id) { $this->pdo->rollBack(); error_log("DB Error: Failed TX insert"); return ['success' => false, 'message' => 'DB error (TX).']; }
+             // 2. Insert into payments (without pay_currency initially)
+             $planKey = 'CUSTOM_'.$usdAmount;
+             $stmtPay = $this->pdo->prepare("INSERT INTO payments (user_id, order_id, plan_key, usd_amount, tokens, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'Pending', NOW(), NOW())"); $stmtPay->execute([$userId, $orderId, $planKey, $usdAmount, $totalTokens]); $payment_record_id = $this->pdo->lastInsertId();
+             if (!$payment_record_id) { $this->pdo->rollBack(); error_log("DB Error: Failed PAY insert"); return ['success' => false, 'message' => 'DB error (PAY).']; }
+             // 3. Prepare payload WITHOUT pay_currency
+             $payload = ['price_amount' => $usdAmount, 'price_currency' => 'usd', 'order_id' => $orderId, 'order_description' => $description, 'ipn_callback_url' => IPN_URL, 'success_url' => SITE_URL . '?p=wallet&payment=success&orderId=' . $orderId, 'cancel_url' => SITE_URL . '?p=dashboard&payment=cancelled'];
+             // 4. Call NowPayments API
+             $ch = curl_init(); /* ... cURL setup ... */ curl_setopt($ch, CURLOPT_URL, NOWPAYMENTS_API_URL . '/payment'); curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); curl_setopt($ch, CURLOPT_POST, 1); curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload)); curl_setopt($ch, CURLOPT_HTTPHEADER, ['x-api-key: ' . NOWPAYMENTS_API_KEY, 'Content-Type: application/json']);
+             $response = curl_exec($ch); $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE); $curl_error = curl_error($ch); curl_close($ch);
+             // 5. Handle Response (Expect URL)
+             if ($http_code == 201 || $http_code == 200) {
+                 $responseData = json_decode($response, true);
+                 $payment_url = $responseData['payment_url'] ?? $responseData['invoice_url'] ?? null;
+                 if ($payment_url) {
+                     $gatewayPaymentId = $responseData['payment_id'] ?? null;
+                     if ($gatewayPaymentId && $payment_record_id) { $stmtUpdatePayId = $this->pdo->prepare("UPDATE payments SET gateway_payment_id = ?, updated_at = NOW() WHERE id = ?"); $stmtUpdatePayId->execute([$gatewayPaymentId, $payment_record_id]); }
+                     $this->pdo->commit(); return ['success' => true, 'payment_url' => $payment_url]; // Return redirect URL
+                 } else { $this->pdo->rollBack(); error_log("NP Response Missing URL: " . $response); return ['success' => false, 'message' => 'Gateway Error: Invalid structure: ' . $response]; }
+             }
+             // --- Error Handling ---
+             $this->pdo->rollBack(); $errorData = json_decode($response, true); $errorMessage = $errorData['message'] ?? $response ?? "Unknown API error"; if (!empty($curl_error)) { $errorMessage = "cURL Error: " . $curl_error; } error_log("NP API Error: " . $errorMessage); return ['success' => false, 'message' => 'Gateway Error: ' . $errorMessage];
+         } catch (PDOException $e) { if ($this->pdo->inTransaction()) { $this->pdo->rollBack(); } error_log("Create Invoice DB Error: " . $e->getMessage()); return ['success' => false, 'message' => 'Database error.']; }
+    }
+
+    // getPaymentStatus function REMOVED as polling is not used in redirect method
+
+    /** [MODIFIED FOR EMAIL] Handles NowPayments IPN */
+    public function handleNowPaymentsIPN() {
+         error_log("====== IPN Handler Started ======");
+         $headers = getallheaders(); $np_signature = $headers['X-Nowpayments-Sig'] ?? $headers['x-nowpayments-sig'] ?? '';
+         if (empty($np_signature)) { error_log("IPN Error: No signature."); header('HTTP/1.1 400 Bad Request'); exit('IPN Error: No signature.'); } error_log("IPN Sig Received: " . $np_signature);
+         $raw_body = file_get_contents('php://input'); if ($raw_body === false) { error_log("IPN Error: No body."); header('HTTP/1.1 400 Bad Request'); exit('IPN Error: No body.'); } error_log("IPN Raw Body: " . $raw_body);
+         try {
+             $hmac = hash_hmac('sha512', $raw_body, NOWPAYMENTS_IPN_SECRET); error_log("IPN Calculated HMAC: " . $hmac);
+             $signature_valid = hash_equals($hmac, $np_signature); error_log("IPN Sig Valid: " . ($signature_valid ? 'Yes' : 'No'));
+             if (!$signature_valid) { error_log("IPN Error: Invalid signature."); header('HTTP/1.1 401 Unauthorized'); exit('IPN Error: Invalid signature.'); }
+             $data = json_decode($raw_body, true); if ($data === null) { error_log("IPN Error: Invalid JSON."); header('HTTP/1.1 400 Bad Request'); exit('IPN Error: Invalid JSON.'); } error_log("IPN Data: " . print_r($data, true));
+             $payment_status = $data['payment_status'] ?? 'unknown'; $orderId = $data['order_id'] ?? null; $gatewayPaymentId = $data['payment_id'] ?? null; $actualPayCurrency = $data['pay_currency'] ?? null; $actualPayAmount = $data['pay_amount'] ?? null;
+             error_log("IPN Status: " . $payment_status . " for Order ID: " . $orderId . ", Gateway ID: " . $gatewayPaymentId);
+             if (!$orderId) { error_log("IPN Error: Missing order_id."); echo "IPN OK: Missing order_id."; exit(); }
+             $finalDbStatus = 'Pending';
+             if ($payment_status === 'finished') { $finalDbStatus = 'Complete'; }
+             else if (in_array($payment_status, ['confirmed', 'sending', 'partially_paid'])) { $finalDbStatus = 'Processing'; }
+             else if (in_array($payment_status, ['failed', 'refunded', 'expired'])) { $finalDbStatus = 'Failed'; }
+             $this->pdo->beginTransaction();
+             $sqlPay = "UPDATE payments SET status = ?, gateway_payment_id = ?, updated_at = NOW()"; $paramsPay = [$finalDbStatus, $gatewayPaymentId]; if ($actualPayCurrency) { $sqlPay .= ", pay_currency = IFNULL(pay_currency, ?)"; $paramsPay[] = $actualPayCurrency; } $sqlPay .= " WHERE order_id = ? AND status IN ('Pending', 'Processing')"; $paramsPay[] = $orderId;
+             $stmtUpdatePay = $this->pdo->prepare($sqlPay); $updatedPay = $stmtUpdatePay->execute($paramsPay); $payRowsAffected = $stmtUpdatePay->rowCount(); error_log("IPN Updated payments: Rows = " . $payRowsAffected);
+             $stmtUpdateTx = $this->pdo->prepare("UPDATE transactions SET status = ? WHERE details = ? AND status IN ('Pending', 'Processing')"); $updatedTx = $stmtUpdateTx->execute([$finalDbStatus, $orderId]); $txRowsAffected = $stmtUpdateTx->rowCount(); error_log("IPN Updated transactions: Rows = " . $txRowsAffected);
+             $emailSent = false;
+             if ($finalDbStatus === 'Complete' && ($payRowsAffected > 0 || $txRowsAffected > 0)) {
+                  $stmtGetData = $this->pdo->prepare("SELECT p.user_id, p.tokens, p.usd_amount, u.email, u.username FROM payments p JOIN users u ON p.user_id = u.id WHERE p.order_id = ?"); $stmtGetData->execute([$orderId]); $paymentData = $stmtGetData->fetch();
+                  if ($paymentData && $paymentData['tokens'] > 0) {
+                       $userId = $paymentData['user_id']; $tokenAmount = $paymentData['tokens']; $usdAmount = $paymentData['usd_amount']; $email = $paymentData['email']; $username = $paymentData['username'];
+                       $stmtUser = $this->pdo->prepare("UPDATE users SET tokens = tokens + ? WHERE id = ?"); $updatedUser = $stmtUser->execute([$tokenAmount, $userId]); error_log("IPN Credited Tokens (User: $userId): " . ($updatedUser ? 'Success' : 'FAILURE'));
+                       if ($updatedUser) {
+                            $subjectPurchase = "Purchase Confirmation - " . APP_NAME; $bodyPurchase = "<p>Hello " . htmlspecialchars($username) . ",</p><p>Your purchase of <strong>" . number_format($tokenAmount) . " GALAXY</strong> ($" . number_format($usdAmount, 2) . ") is complete!</p><p>Tokens added.</p><p>Order ID: " . htmlspecialchars($orderId) . "</p><p>Paid: ~" . ($actualPayAmount ?? 'N/A') . " " . ($actualPayCurrency ? strtoupper($actualPayCurrency) : '') . "</p>"; $emailSent = $this->sendEmail($email, $username, $subjectPurchase, $bodyPurchase);
+                       }
+                  } else { error_log("IPN Error: Could not find payment/user data for Order ID: " . $orderId); }
+             }
+             if (($payRowsAffected > 0 || $txRowsAffected > 0)) { $this->pdo->commit(); error_log("IPN DB Committed for Order ID: " . $orderId); echo "IPN OK: Processed."; }
+             else { $this->pdo->rollBack(); error_log("IPN DB Rollback: No rows affected for Order ID: " . $orderId); echo "IPN OK: No update."; }
+             exit();
+         } catch (\Exception $e) { error_log("IPN CRITICAL Error: " . $e->getMessage()); if ($this->pdo->inTransaction()) { $this->pdo->rollBack(); error_log("IPN Rolled back DB due to exception."); } header('HTTP/1.1 500 Internal Server Error'); exit('IPN Error: Server exception.');}
+    }
+
+
+    // --- Other User Functions ---
+    public function getBalance() {
+        if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Not auth.']; } $userId = $_SESSION['user_id'];
+        try { $stmt = $this->pdo->prepare("SELECT tokens FROM users WHERE id = ?"); $stmt->execute([$userId]); $data = $stmt->fetch();
+            if ($data) { return ['success' => true, 'balance' => number_format((float)$data['tokens'], 2, '.', ',')]; } else { return ['success' => false, 'message' => 'User not found.']; }
+        } catch (PDOException $e) { error_log("Get Balance failed: " . $e->getMessage()); return ['success' => false, 'message' => 'DB error.']; }
+    }
+    public function getTransactionHistory() {
+        if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Not auth.']; } $userId = $_SESSION['user_id'];
+        try { $stmt = $this->pdo->prepare("SELECT id, type, amount, status, created_at, details FROM transactions WHERE user_id = ? ORDER BY created_at DESC"); $stmt->execute([$userId]); $history = $stmt->fetchAll();
+            return ['success' => true, 'history' => $history];
+        } catch (PDOException $e) { error_log("Tx history failed: " . $e->getMessage()); return ['success' => false, 'message' => 'DB error.']; }
+    }
+    public function getReferralHistory() {
+        if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Not auth.']; } $userId = $_SESSION['user_id'];
+        try { $stmtStats = $this->pdo->prepare("SELECT COUNT(id) as total_referrals FROM users WHERE referrer_id = ?"); $stmtStats->execute([$userId]); $stats = $stmtStats->fetch();
+            $totalReferrals = $stats['total_referrals'] ?? 0; $totalEarnings = $totalReferrals * REFERRAL_BONUS;
+            $stmtHistory = $this->pdo->prepare("SELECT username, created_at FROM users WHERE referrer_id = ? ORDER BY created_at DESC"); $stmtHistory->execute([$userId]); $history = $stmtHistory->fetchAll();
+            return ['success' => true, 'stats' => ['total_referrals' => (int)$totalReferrals, 'total_earnings' => number_format($totalEarnings, 2, '.', ',')], 'history' => $history];
+        } catch (PDOException $e) { error_log("Ref history failed: " . $e->getMessage()); return ['success' => false, 'message' => 'DB error.']; }
+    }
+    public function getUserDetails() {
+         if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Not auth.']; } $userId = $_SESSION['user_id'];
+         try { $stmtUser = $this->pdo->prepare("SELECT id, username, email, created_at, referrer_id FROM users WHERE id = ?"); $stmtUser->execute([$userId]); $user = $stmtUser->fetch();
+             if (!$user) { return ['success' => false, 'message' => 'User not found.']; }
+             $stmtMetrics = $this->pdo->prepare("SELECT COALESCE(SUM(CASE WHEN type IN ('PURCHASE', 'SIGNUP', 'REFERRAL', 'ADJUST_IN') AND status='Complete' THEN amount ELSE 0 END), 0) AS total_acquired, COALESCE(SUM(CASE WHEN type = 'REFERRAL' AND status='Complete' THEN amount ELSE 0 END), 0) AS total_ref_earned, COALESCE(COUNT(CASE WHEN type = 'PURCHASE' AND status = 'Complete' THEN 1 ELSE NULL END), 0) AS total_purchases FROM transactions WHERE user_id = ?"); $stmtMetrics->execute([$userId]); $metrics = $stmtMetrics->fetch();
+             $stmtRecentTx = $this->pdo->prepare("SELECT type, amount, status, created_at FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 5"); $stmtRecentTx->execute([$userId]); $recentTransactions = $stmtRecentTx->fetchAll();
+             $totalAcquired = (float)($metrics['total_acquired'] ?? 0); $totalRefEarned = (float)($metrics['total_ref_earned'] ?? 0); $totalPurchases = (int)($metrics['total_purchases'] ?? 0);
+             return ['success' => true, 'details' => ['id' => $user['id'], 'username' => $user['username'], 'email' => $user['email'], 'member_since' => date('M d, Y', strtotime($user['created_at'])), 'referrer_id' => $user['referrer_id'] ? 'User ID: ' . $user['referrer_id'] : 'None', 'stats' => ['tokens_acquired' => number_format($totalAcquired, 2, '.', ','), 'total_purchases' => $totalPurchases, 'referral_earnings' => number_format($totalRefEarned, 2, '.', ',')]], 'recent_transactions' => $recentTransactions];
+         } catch (PDOException $e) { error_log("User details failed: " . $e->getMessage()); return ['success' => false, 'message' => 'DB error.']; }
+    }
+    public function withdrawTokens($data) {
+        if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Auth required.']; }
+        $userId = $_SESSION['user_id']; $amount = filter_var($data['amount'], FILTER_VALIDATE_FLOAT); $walletAddress = filter_var($data['wallet_address'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        if (!$amount || $amount <= 0 || empty($walletAddress) || strlen($walletAddress) < 20) { return ['success' => false, 'message' => 'Invalid amount or address.']; }
+        $withdrawalAmount = -abs($amount); $details = "Withdrawal Request. To: " . $walletAddress;
+        try {
+            $this->pdo->beginTransaction(); $stmtCheck = $this->pdo->prepare("SELECT tokens FROM users WHERE id = ? FOR UPDATE"); $stmtCheck->execute([$userId]); $user = $stmtCheck->fetch();
+            if (!$user || $user['tokens'] < $amount) { $this->pdo->rollBack(); return ['success' => false, 'message' => 'Insufficient funds.']; }
+            $stmtUpdate = $this->pdo->prepare("UPDATE users SET tokens = tokens - ? WHERE id = ?"); $stmtUpdate->execute([$amount, $userId]);
+            $stmtLog = $this->pdo->prepare("INSERT INTO transactions (user_id, type, amount, status, details) VALUES (?, 'WITHDRAWAL', ?, 'Processing', ?)"); $stmtLog->execute([$userId, $withdrawalAmount, $details]);
+            $this->pdo->commit(); return ['success' => true, 'message' => 'Withdrawal requested! Processing takes 24-48h.'];
+        } catch (PDOException $e) { $this->pdo->rollBack(); error_log("Withdrawal failed: " . $e->getMessage()); return ['success' => false, 'message' => 'DB error during withdrawal.']; }
+    }
+
+} // End Class
