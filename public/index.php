@@ -16,6 +16,8 @@ if (isset($_POST['action'])) {
     switch ($_POST['action']) {
         case 'register': $response = $authController->register($_POST); break;
         case 'login': $response = $authController->login($_POST); break;
+        case 'send_registration_otp': $response = $authController->sendRegistrationOtp($_POST); break;
+        case 'send_password_reset_otp': $response = $authController->sendPasswordResetOtp($_POST); break;
         case 'logout': $response = $authController->logout(); break;
         case 'updatePassword': $response = $authController->updatePassword($_POST); break;
         case 'create_payment_invoice': $response = $authController->createNowPaymentsInvoice($_POST); break;
