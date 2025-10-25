@@ -20,7 +20,7 @@ class Database {
         } catch (PDOException $e) {
             error_log("Database Connection Error: " . $e->getMessage());
             // Never show detailed errors in production
-            die(json_encode(['success' => false, 'message' => "System error: Could not connect to the database."]));
+            die(json_encode(['success' => false, 'message' => "DB ERROR: " . $e->getMessage()]));
         }
     }
 
