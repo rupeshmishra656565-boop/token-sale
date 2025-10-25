@@ -72,31 +72,67 @@ $admin_username = $_SESSION['admin_username'] ?? 'Admin';
     <title>PITHOS Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link href="assets/admin_styles.css" rel="stylesheet"> <style>
-        /* Minimal styles for layout */
-        body { background-color: #111827; color: #d1d5db; }
-        .glass-card { background: rgba(31, 41, 55, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(75, 85, 99, 0.5); border-radius: 1rem; }
-        .spinner { /* ... same spinner style ... */ display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #fff; animation: spin 0.8s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
-        /* Include status badge styles from main.css or add here */
-        .status-badge { display: inline-flex; align-items: center; padding: 0.2rem 0.5rem; border-radius: 50px; font-size: 0.7rem; font-weight: 600; line-height: 1; }
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <link href="assets/admin_styles.css" rel="stylesheet"> 
+    <style>
+        :root {
+            --font-heading: 'Space Grotesk', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --bg-dark: #0a0a0f;
+            --bg-card: rgba(20, 20, 30, 0.7);
+            --border-color: rgba(153, 69, 255, 0.2);
+            --primary: #9945FF;
+            --primary-glow: rgba(153, 69, 255, 0.5);
+        }
+        body { 
+            background-color: var(--bg-dark); 
+            color: #d1d5db; 
+            font-family: var(--font-body);
+        }
+        .font-heading { font-family: var(--font-heading); }
+        .glass-card { 
+            background: var(--bg-card); 
+            backdrop-filter: blur(15px); 
+            border: 1px solid var(--border-color); 
+            border-radius: 1.25rem; /* 20px */
+        }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #fff; animation: spin 0.8s linear infinite; } 
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Status Badges */
+        .status-badge { display: inline-flex; align-items: center; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: 0.05em; }
         .status-complete { background-color: rgba(16, 185, 129, 0.2); color: #10b981; }
         .status-pending { background-color: rgba(245, 158, 11, 0.2); color: #f59e0b; }
         .status-failed { background-color: rgba(239, 68, 68, 0.2); color: #ef4444; }
         .status-processing { background-color: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+        .status-unknown { background-color: rgba(107, 114, 128, 0.2); color: #9ca3af; }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out forwards; }
     </style>
 </head>
-<body class="min-h-screen">
-    <header class="bg-gray-800/80 backdrop-blur-md shadow-md sticky top-0 z-50">
+<body class="min-h-screen antialiased">
+    <header class="bg-gray-900/80 backdrop-blur-md shadow-md sticky top-0 z-50 border-b border-[var(--border-color)]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                 <div class="flex items-center">
-                    <span class="font-bold text-xl text-purple-400">PITHOS Admin</span>
+                 <div class="flex items-center gap-2">
+                    <svg class="w-8 h-8 text-[var(--primary)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.333 9-6.03 9-11.623 0-1.31-.21-2.571-.598-3.751A11.959 11.959 0 0112 2.964z" />
+                    </svg>
+                    <span class="font-heading font-bold text-xl text-purple-400">PITHOS Admin</span>
                  </div>
                  <div class="flex items-center space-x-4">
-                     <span class="text-sm text-gray-300">Welcome, <?php echo htmlspecialchars($admin_username); ?></span>
+                     <span class="text-sm text-gray-300 hidden sm:inline">Welcome, <span class="font-semibold text-purple-400"><?php echo htmlspecialchars($admin_username); ?></span></span>
                      <form id="logout-form" method="post" action="index.php">
                          <input type="hidden" name="action" value="admin_logout">
-                         <button type="submit" class="text-sm text-red-400 hover:text-red-300 transition">Logout</button>
+                         <button type="submit" class="text-sm font-medium text-red-500 hover:text-red-400 transition-colors duration-200 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg">Logout</button>
                      </form>
                  </div>
             </div>
@@ -119,9 +155,11 @@ $admin_username = $_SESSION['admin_username'] ?? 'Admin';
         ?>
     </main>
 
-    <footer class="text-center py-4 mt-8 border-t border-gray-700">
-        <p class="text-xs text-gray-500">&copy; <?php echo date("Y"); ?> PITHOS Admin Panel</p>
+    <footer class="text-center py-6 mt-8 border-t border-[var(--border-color)]">
+        <p class="text-xs text-gray-500">&copy; <?php echo date("Y"); ?> PITHOS Admin Panel. All Rights Reserved.</p>
     </footer>
+
+    <div id="toast-container" class="fixed top-6 right-6 z-[100] space-y-3"></div>
 
     <script src="assets/admin.js"></script>
     <script>
@@ -138,14 +176,32 @@ $admin_username = $_SESSION['admin_username'] ?? 'Admin';
                 alert('Network error during logout.');
             });
         });
-        // Global admin helpers (like showToast if needed) can be defined here or in admin.js
-         function showToast(message, type) { /* ... basic toast implementation ... */
-             const container = $('body'); // Simple append to body
-             const toast = $('<div>').css({ position: 'fixed', top: '20px', right: '20px', padding: '10px 20px', borderRadius: '5px', color: 'white', zIndex: 1000, opacity: 0.9 })
-                 .addClass(type === 'success' ? 'bg-green-600' : 'bg-red-600')
-                 .text(message);
+
+        // Global admin toast function
+         function showToast(message, type) {
+             const container = $('#toast-container');
+             let icon;
+             let styles;
+
+             if (type === 'success') {
+                icon = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                styles = 'bg-emerald-600 border-emerald-500/50';
+             } else {
+                icon = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                styles = 'bg-red-600 border-red-500/50';
+             }
+
+             const toast = $(`
+                <div class="flex items-center gap-3 p-4 rounded-xl shadow-lg text-white border ${styles} glass-card animate-fadeIn" style="animation: fadeIn 0.3s ease-out; backdrop-filter: blur(10px);">
+                    ${icon}
+                    <span class="text-sm font-medium">${message}</span>
+                </div>
+             `);
+             
              container.append(toast);
-             setTimeout(() => toast.fadeOut(500, () => toast.remove()), 4000);
+             setTimeout(() => {
+                toast.fadeOut(500, () => toast.remove());
+             }, 4000);
          }
          window.showToast = showToast; // Make it global for admin.js
     </script>

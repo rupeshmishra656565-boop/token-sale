@@ -1,12 +1,10 @@
 // ==============================================================================
 // Frontend AJAX Logic (public/assets/main.js) - DISPLAY DETAILS & POLLING METHOD
-// Email/OTP features REMOVED
 // ==============================================================================
 
 const CURRENT_FILE = 'index.php';
 let paymentPollingIntervalId = null; // Variable for polling timer
 const POLLING_INTERVAL_MS = 5000; // Check every 5 seconds
-// Define TOKEN_RATE globally
 const TOKEN_RATE = 1000.00; // Make sure this matches config.php
 
 /** Utility for displaying non-blocking toast notifications. */
@@ -44,7 +42,7 @@ function setButtonLoading(buttonId, textId, spinnerId, isLoading, defaultText) {
 function fetchBalance() {
     const balanceEl = $('#token-balance'); if (!balanceEl.length) return; balanceEl.text('---').addClass('animate-pulse');
     $.ajax({ url: CURRENT_FILE, type: 'POST', dataType: 'json', data: { action: 'get_balance' },
-        success: function(response) { if (response.success) { balanceEl.text(response.balance); } else { balanceEl.text('N/A'); /* showToast('Failed: '+response.message, 'error'); */ }},
+        success: function(response) { if (response.success) { balanceEl.text(response.balance); } else { balanceEl.text('N/A'); }},
         error: function(xhr) { balanceEl.text('Error'); showToast('Net err balance.', 'error'); }, complete: function() { balanceEl.removeClass('animate-pulse'); }
     });
 }
@@ -75,7 +73,8 @@ function showPaymentOptions(usdAmount, bonusPercent) {
 function confirmTokenPurchase(selectedCurrency) {
     const modal = $('#payment-modal'); const usdAmount = parseFloat(modal.attr('data-usd-amount')); const bonusPercent = parseFloat(modal.attr('data-bonus-percent'));
     $('#payment-options').addClass('hidden'); $('#payment-details-display').addClass('hidden'); $('#payment-processing-status').removeClass('hidden');
-    $('#payment-status-text').text("Creating payment request...").removeClass('text-red-400'); $('#payment-spinner').removeClass('hidden');
+    $('#payment-status-text').text("Creating payment request...").removeClass('text-red-400 text-emerald-400'); // Reset color
+    $('#payment-spinner').removeClass('hidden');
     $('#modal-title').find('span').text('Processing Request...');
     const buyButtons = $('button[onclick^="showPaymentOptions"]'); buyButtons.prop('disabled', true).addClass('opacity-50');
     $.ajax({
@@ -83,6 +82,8 @@ function confirmTokenPurchase(selectedCurrency) {
         data: { action: 'create_payment_invoice', usd_amount: usdAmount, bonus_percent: bonusPercent, pay_currency: selectedCurrency },
         success: function(response) {
             if (response.success && response.pay_address && response.pay_amount && response.transaction_id) {
+                // Store transaction_id on the modal
+                modal.attr('data-transaction-id', response.transaction_id); 
                 displayPaymentDetails(response.pay_address, response.pay_amount, response.pay_currency, response.transaction_id);
             } else {
                 $('#payment-spinner').addClass('hidden'); $('#payment-status-text').html(`<span class="text-red-400">❌ Error: ${response.message || 'Could not create payment.'}</span>`);
@@ -109,7 +110,7 @@ function displayPaymentDetails(address, amount, currency, transactionId) {
     if (currencyUpper === 'TRX' || currencyUpper === 'USDTTRC20') { qrData = `tron:${address}?amount=${amount}`; }
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrData)}`;
     $('#payment-qr-code').html(`<img src="${qrCodeUrl}" alt="QR Code" class="mx-auto border-4 border-white/50 rounded-lg shadow-lg">`);
-    $('#payment-instructions').html(`<span id="polling-status">Waiting for confirmation...</span>`);
+    $('#payment-instructions').html(`<span id="polling-status">Waiting for confirmation...</span><span class="inline-block animate-pulse delay-100">.</span><span class="inline-block animate-pulse delay-200">.</span><span class="inline-block animate-pulse delay-300">.</span>`);
     startPaymentPolling(transactionId);
 }
 
@@ -118,12 +119,12 @@ function startPaymentPolling(transactionId) {
     stopPaymentPolling(); if (!transactionId) { console.error("No tx ID for polling."); return; }
     console.log(`Start poll tx: ${transactionId}`);
     paymentPollingIntervalId = setInterval(() => { checkPaymentStatus(transactionId); }, POLLING_INTERVAL_MS);
-    $('#payment-modal').attr('data-transaction-id', transactionId);
+    // No need to store tx_id on modal anymore, it's passed directly
 }
 
 /** Stops payment status polling. */
 function stopPaymentPolling() {
-    if (paymentPollingIntervalId) { console.log("Stop poll."); clearInterval(paymentPollingIntervalId); paymentPollingIntervalId = null; $('#payment-modal').removeAttr('data-transaction-id'); }
+    if (paymentPollingIntervalId) { console.log("Stop poll."); clearInterval(paymentPollingIntervalId); paymentPollingIntervalId = null; }
 }
 
 /** Makes AJAX call to check payment status via our backend. */
@@ -137,26 +138,112 @@ function checkPaymentStatus(transactionId) {
                 const status = response.status; const modal = $('#payment-modal'); const buyButtons = $('button[onclick^="showPaymentOptions"]');
                 if (status === 'Complete') {
                     stopPaymentPolling();
-                    $('#payment-details-display').addClass('hidden'); $('#payment-processing-status').removeClass('hidden').html(`<div class="text-center py-6"><svg class="w-16 h-16 text-emerald-500 mx-auto mb-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><p class="text-2xl font-bold text-emerald-400">Payment Confirmed!</p><p class="text-gray-400 mt-2">Tokens credited.</p></div>`);
-                    $('#modal-title').find('span').text('Payment Success'); showToast('✅ Payment Confirmed!', 'success'); fetchBalance(); if (typeof fetchTransactionHistory === 'function') { fetchTransactionHistory(); }
-                    setTimeout(() => { modal.addClass('hidden'); buyButtons.prop('disabled', false).removeClass('opacity-50'); $('#payment-options').removeClass('hidden'); $('#payment-processing-status').addClass('hidden').find('#payment-spinner').removeClass('hidden'); $('#payment-details-display').addClass('hidden'); $('#modal-title').find('span').text('Confirm Purchase'); }, 3500);
+                    modal.removeAttr('data-transaction-id'); // Clear tx_id from modal
+                    $('#payment-details-display').addClass('hidden'); 
+                    $('#payment-processing-status').removeClass('hidden').html(`<div class="text-center py-6"><svg class="w-16 h-16 text-emerald-500 mx-auto mb-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><p class="text-2xl font-bold text-emerald-400">Payment Confirmed!</p><p class="text-gray-400 mt-2">Tokens credited.</p></div>`);
+                    $('#modal-title').find('span').text('Payment Success'); 
+                    showToast('✅ Payment Confirmed!', 'success'); 
+                    if (typeof fetchBalance === 'function') fetchBalance(); 
+                    if (typeof fetchDashboardActivity === 'function') fetchDashboardActivity(); // Refresh dashboard activity too
+                    if (typeof fetchTransactionHistory === 'function') fetchTransactionHistory(); 
+                    setTimeout(() => { 
+                        modal.addClass('hidden'); 
+                        buyButtons.prop('disabled', false).removeClass('opacity-50'); 
+                        $('#payment-options').removeClass('hidden'); 
+                        $('#payment-processing-status').addClass('hidden').find('#payment-spinner').removeClass('hidden'); 
+                        $('#payment-details-display').addClass('hidden'); 
+                        $('#modal-title').find('span').text('Confirm Purchase'); 
+                    }, 3500);
                 } else if (status === 'Failed') {
                     stopPaymentPolling();
-                    $('#payment-details-display').addClass('hidden'); $('#payment-processing-status').removeClass('hidden').html(`<div class="text-center py-6"><svg class="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><p class="text-2xl font-bold text-red-400">Payment Failed</p><p class="text-gray-400 mt-2">Not confirmed or cancelled.</p></div>`);
-                    $('#modal-title').find('span').text('Payment Failed'); showToast('❌ Payment Failed.', 'error'); buyButtons.prop('disabled', false).removeClass('opacity-50');
-                } else { /* Still Pending */ console.log(`Status: ${status}, polling...`); let txt = $('#polling-status').text(); $('#polling-status').text(txt.endsWith('...') ? 'Waiting...' : txt + '.'); }
+                    modal.removeAttr('data-transaction-id'); // Clear tx_id from modal
+                    $('#payment-details-display').addClass('hidden'); 
+                    $('#payment-processing-status').removeClass('hidden').html(`<div class="text-center py-6"><svg class="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><p class="text-2xl font-bold text-red-400">Payment Failed</p><p class="text-gray-400 mt-2">Not confirmed, cancelled, or expired.</p></div>`);
+                    $('#modal-title').find('span').text('Payment Failed'); 
+                    showToast('❌ Payment Failed.', 'error'); 
+                    buyButtons.prop('disabled', false).removeClass('opacity-50');
+                     // Optionally close modal after showing failed status
+                    setTimeout(() => {
+                        modal.addClass('hidden');
+                        $('#payment-options').removeClass('hidden'); 
+                        $('#payment-processing-status').addClass('hidden').find('#payment-spinner').removeClass('hidden'); 
+                        $('#payment-details-display').addClass('hidden'); 
+                        $('#modal-title').find('span').text('Confirm Purchase');
+                    }, 4000); 
+                } else { /* Still Processing */ 
+                    console.log(`Status: ${status}, polling...`); 
+                    let txt = $('#polling-status').text(); 
+                    $('#polling-status').text(txt.endsWith('...') ? 'Waiting for confirmation.' : txt + '.'); 
+                }
             } else { console.error("Error fetching status:", response.message); }
         },
         error: function(xhr) { console.error("Net error checking status."); }
     });
 }
 
-/** Function to close the payment modal and stop polling. */
+/** Function to close the payment modal and potentially cancel the payment. */
 function closePaymentModal() {
-    stopPaymentPolling(); $('#payment-modal').addClass('hidden');
-    $('button[onclick^="showPaymentOptions"]').prop('disabled', false).removeClass('opacity-50');
-    $('#payment-options').removeClass('hidden'); $('#payment-processing-status').addClass('hidden').find('#payment-spinner').removeClass('hidden'); $('#payment-details-display').addClass('hidden'); $('#modal-title').find('span').text('Confirm Purchase');
+    const modal = $('#payment-modal');
+    const transactionId = modal.attr('data-transaction-id');
+    
+    stopPaymentPolling(); // Always stop polling
+
+    if (transactionId) {
+        console.log(`User closed modal for TxID: ${transactionId}. Attempting cancellation.`);
+        // Make AJAX call to backend to mark as Failed IF still Processing
+        $.ajax({
+            url: CURRENT_FILE,
+            type: 'POST',
+            dataType: 'json',
+            data: { 
+                action: 'cancel_payment', 
+                transaction_id: transactionId 
+            },
+            success: function(response) {
+                if (response.success) {
+                    console.log(`Cancellation status for TxID ${transactionId}: ${response.message}`);
+                     if (response.message.includes('cancelled')) {
+                         showToast('ℹ️ Payment cancelled.', 'info');
+                     }
+                    // Refresh history to show 'Failed' status
+                    if (typeof fetchDashboardActivity === 'function') fetchDashboardActivity();
+                    if (typeof fetchTransactionHistory === 'function') fetchTransactionHistory();
+                } else {
+                    console.error(`Cancellation failed for TxID ${transactionId}: ${response.message}`);
+                    // Don't show error to user, just log it. Maybe IPN already completed it.
+                }
+            },
+            error: function() {
+                console.error(`Network error during cancellation attempt for TxID ${transactionId}.`);
+            },
+            complete: function() {
+                // Regardless of cancellation success/failure, hide the modal and reset UI
+                hideAndResetModal();
+            }
+        });
+    } else {
+         // If no transaction ID (e.g., closed before confirming currency), just hide
+        hideAndResetModal();
+    }
 }
+
+// --- NEW HELPER: Hides and resets the modal UI ---
+function hideAndResetModal() {
+    const modal = $('#payment-modal');
+    modal.addClass('hidden');
+    modal.removeAttr('data-transaction-id'); // Clear tx_id
+    $('button[onclick^="showPaymentOptions"]').prop('disabled', false).removeClass('opacity-50');
+    
+    // Reset modal content to initial state
+    $('#payment-options').removeClass('hidden'); 
+    $('#payment-processing-status').addClass('hidden').html(`
+        <div id="payment-spinner" class="animate-spin inline-block w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full mb-4"></div>
+        <p id="payment-status-text" class="text-gray-400 text-sm">Creating payment request...</p>
+    `); // Restore spinner and text
+    $('#payment-details-display').addClass('hidden'); 
+    $('#modal-title').find('span').text('Confirm Purchase');
+}
+
 
 // --- Document Ready / Initialization ---
 $(document).ready(function() {
@@ -164,16 +251,30 @@ $(document).ready(function() {
     window.copyReferralLink = copyReferralLink; window.setButtonLoading = setButtonLoading; window.fetchBalance = fetchBalance; window.fetchReferralStats = fetchReferralStats;
     window.showPaymentOptions = showPaymentOptions; window.confirmTokenPurchase = confirmTokenPurchase; window.displayPaymentDetails = displayPaymentDetails;
     window.copyToClipboard = copyToClipboard; window.closePaymentModal = closePaymentModal;
-    // Deprecated pointers
-    window.initiateTokenPurchase = showPaymentOptions; window.simulateTokenPurchase = showPaymentOptions;
 
     // --- Init Checks ---
-    if ($('#token-balance').length) { fetchBalance(); } if ($('#dashboard-referral-earnings').length) { fetchReferralStats(); }
-     if ($('#form-login').length) { if(typeof showAuthForm === 'function') { showAuthForm('login'); const urlParams = new URLSearchParams(window.location.search); const ref = urlParams.get('ref'); if (ref) { $('#referrer_id').val(ref); showAuthForm('register'); } } else { console.error("showAuthForm missing."); }}
+    if ($('#token-balance').length) { fetchBalance(); } 
+    if ($('#dashboard-referral-earnings').length) { fetchReferralStats(); }
+     if ($('#form-login').length) { 
+         if(typeof showAuthForm === 'function') { 
+            const urlParams = new URLSearchParams(window.location.search); 
+            const ref = urlParams.get('ref'); 
+            const loginParam = urlParams.get('login'); // Check for ?login=1
+
+            if (ref) { 
+                $('#referrer_id').val(ref); 
+                showAuthForm('register'); 
+            } else if (loginParam) {
+                 showAuthForm('login'); // Show login if ?login=1
+            } else {
+                 showAuthForm('register'); // Default to register if not logged in and no params
+            }
+        } else { console.error("showAuthForm missing."); }
+    }
 
     // --- Form Handlers ---
 
-    // 1. Login Form Submission
+    // Login Form
     $('#form-login').on('submit', function(e) {
         e.preventDefault(); const defaultText = 'Sign In'; setButtonLoading('login-btn', 'login-text', 'login-spinner', true, defaultText); $('#login-message').text('');
         const formData = $(this).serializeArray(); formData.push({ name: 'action', value: 'login' });
@@ -184,7 +285,7 @@ $(document).ready(function() {
         }).fail(function() { setButtonLoading('login-btn', 'login-text', 'login-spinner', false, defaultText); $('#login-message').text('Network error.').addClass('text-red-400'); showToast('Network error.', 'error'); });
     });
 
-    // 2. Register Form Submission (Simple, no OTP)
+    // Register Form
     $('#form-register').on('submit', function(e) {
         e.preventDefault(); const defaultText = 'Register & Claim Bonus'; const btnId = 'register-btn'; const textId = 'register-text'; const spinnerId = 'register-spinner';
         setButtonLoading(btnId, textId, spinnerId, true, defaultText); $('#register-message').text('');
@@ -196,10 +297,8 @@ $(document).ready(function() {
         }).fail(function() { setButtonLoading(btnId, textId, spinnerId, false, defaultText); $('#register-message').text('Network error.').addClass('text-red-400'); showToast('Network error.', 'error'); });
     });
     
-    // 3. Forgot Password Form Handler REMOVED
-
-    // 4. Logout Button Handler
-    $('#logout-btn, #logout-btn-mobile').on('click', function(e) { // Combined selector
+    // Logout Button
+    $('#logout-btn, #logout-btn-mobile').on('click', function(e) { 
         e.preventDefault(); showToast('Logging out...', 'info');
         $.post(CURRENT_FILE, { action: 'logout' }, function(response) { if (response.success) { window.location.href = CURRENT_FILE; } else { showToast('Logout failed.', 'error'); } });
     });

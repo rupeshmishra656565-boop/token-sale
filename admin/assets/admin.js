@@ -58,8 +58,8 @@ $(document).ready(function() {
             case 'pending': badgeClass = 'status-pending'; break;
             default: badgeClass = 'status-unknown'; statusText = 'Unknown'; break; // Handle unexpected statuses
         }
-        // Removed dot span for cleaner look
-        return `<span class="status-badge ${badgeClass} text-xs px-2.5 py-0.5 rounded-full">${statusText}</span>`;
+        // Use the new badge class from index.php
+        return `<span class="status-badge ${badgeClass}">${statusText}</span>`;
     }
 
     // Improved date formatting
@@ -71,7 +71,6 @@ $(document).ready(function() {
             if (includeTime) {
                 options.hour = '2-digit';
                 options.minute = '2-digit';
-                // options.timeZoneName = 'short'; // Optional: Add timezone
             }
             return date.toLocaleString(undefined, options);
         } catch (e) {
@@ -113,7 +112,7 @@ $(document).ready(function() {
                             const formattedAmount = sign + Number(Math.abs(amount)).toLocaleString('en-US', { minimumFractionDigits: 2 });
 
                             const row = `
-                                <tr class="border-b border-gray-700/50 hover:bg-gray-700/30 transition-colors duration-150">
+                                <tr class="border-b border-[var(--border-color)] transition-colors duration-150">
                                     <td class="py-3 px-4 text-sm font-medium text-gray-200">${tx.username || 'N/A'}</td>
                                     <td class="py-3 px-4 text-xs uppercase tracking-wider text-gray-400">${tx.type || 'N/A'}</td>
                                     <td class="py-3 px-4 text-sm text-right ${amountClass} font-mono">${formattedAmount}</td>
@@ -158,7 +157,7 @@ $(document).ready(function() {
                     PENDING.body.empty(); // Clear just in case
                     response.withdrawals.forEach(tx => {
                         const row = `
-                            <tr class="border-b border-gray-700/50 hover:bg-gray-700/30 transition-colors duration-150">
+                            <tr class="border-b border-[var(--border-color)] transition-colors duration-150">
                                 <td class="py-3 px-4 text-sm font-medium text-gray-200">${tx.username || 'N/A'}</td>
                                 <td class="py-3 px-4 text-sm text-right text-yellow-400 font-mono">${tx.amount}</td>
                                 <td class="py-3 px-4 text-xs text-gray-400 break-all">${tx.details || 'N/A'}</td>
@@ -204,9 +203,9 @@ $(document).ready(function() {
                 if (response.success && response.users && response.users.length > 0) {
                     USERS.body.empty();
                     response.users.forEach(user => {
-                        const adminBadge = user.is_admin ? '<span class="ml-2 status-badge status-complete text-xs px-2 py-0.5 rounded-full">Admin</span>' : '';
+                        const adminBadge = user.is_admin ? '<span class="ml-2 status-badge status-complete">Admin</span>' : '';
                         const row = `
-                            <tr class="border-b border-gray-700/50 hover:bg-gray-700/30 transition-colors duration-150">
+                            <tr class="border-b border-[var(--border-color)] transition-colors duration-150">
                                 <td class="py-3 px-4 text-sm font-mono text-gray-400">${user.id}</td>
                                 <td class="py-3 px-4 text-sm font-medium text-gray-200 flex items-center">${user.username}${adminBadge}</td>
                                 <td class="py-3 px-4 text-sm text-gray-300 break-all">${user.email}</td>
@@ -297,7 +296,7 @@ $(document).ready(function() {
         MODAL.submitText.removeClass('hidden').text(MODAL.defaultText);
         MODAL.submitSpinner.addClass('hidden');
 
-        MODAL.el.removeClass('hidden flex').addClass('flex'); // Use flex to show
+        MODAL.el.removeClass('hidden').addClass('flex'); // Use flex to show
     });
 
     // Close Balance Adjustment Modal
