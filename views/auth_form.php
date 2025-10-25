@@ -1,100 +1,278 @@
 <?php
-// Premium Auth Form Component - Redesigned for professionalism
+// Ultra-Premium Auth Form Component - Next-Level Design
 ?>
-<div class="glass-card p-6 md:p-8 relative overflow-hidden shadow-xl shadow-purple-900/30 border border-purple-500/20" style="--card-bg: <?php echo 'rgba(20, 20, 30, 0.85)'; ?>;">
-    <div class="absolute -top-16 -right-16 w-40 h-40 bg-purple-600/20 rounded-full blur-3xl opacity-60"></div>
-    <div class="absolute -bottom-16 -left-16 w-40 h-40 bg-cyan-600/20 rounded-full blur-3xl opacity-60"></div>
+<div class="relative group">
+    <!-- Animated Border Gradient -->
+    <div class="absolute -inset-0.5 bg-gradient-to-r from-purple-600 via-cyan-500 to-purple-600 rounded-3xl blur-lg opacity-30 group-hover:opacity-50 transition duration-1000 animate-pulse"></div>
     
-    <div class="relative z-10">
-        <h2 class="text-2xl md:text-3xl font-bold text-center mb-6 font-heading">
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-cyan-400 to-purple-400">
-                Access Your <?php echo TOKEN_NAME; ?> Wallet
-            </span>
-        </h2>
+    <!-- Main Card -->
+    <div class="relative glass-card p-8 md:p-10 rounded-3xl shadow-2xl border-2 border-purple-500/30 overflow-hidden" style="--card-bg: rgba(15, 15, 25, 0.95);">
+        <!-- Decorative Background Elements -->
+        <div class="absolute -top-20 -right-20 w-48 h-48 bg-gradient-to-br from-purple-600/30 to-transparent rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-20 -left-20 w-48 h-48 bg-gradient-to-tr from-cyan-600/30 to-transparent rounded-full blur-3xl"></div>
         
-        <div class="grid grid-cols-2 gap-2 bg-black/40 p-1.5 rounded-lg mb-8 border border-white/10">
-            <button id="tab-login" onclick="showAuthForm('login')" 
-                    class="py-2.5 px-4 rounded-md font-semibold transition-all duration-300 text-sm">
-                Sign In
-            </button>
-            <button id="tab-register" onclick="showAuthForm('register')" 
-                    class="py-2.5 px-4 rounded-md font-semibold transition-all duration-300 text-sm">
-                Register
-            </button>
+        <div class="relative z-10">
+            <!-- Header Section -->
+            <div class="text-center mb-8">
+                <!-- Icon -->
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-cyan-500 shadow-xl shadow-purple-500/40 mb-5">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                
+                <!-- Title -->
+                <h2 class="text-2xl md:text-3xl lg:text-4xl font-black font-heading mb-3">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-300 to-cyan-300">
+                        Welcome to <?php echo TOKEN_NAME; ?>
+                    </span>
+                </h2>
+                <p class="text-gray-400 text-sm md:text-base">
+                    Secure your digital assets on Solana
+                </p>
+            </div>
+            
+            <!-- Tab Switcher -->
+            <div class="relative mb-8">
+                <div class="grid grid-cols-2 gap-3 p-1.5 bg-black/60 rounded-xl border border-white/10 backdrop-blur-sm">
+                    <button id="tab-login" onclick="showAuthForm('login')" 
+                            class="relative py-3.5 px-6 rounded-lg font-bold transition-all duration-300 text-sm md:text-base overflow-hidden group">
+                        <span class="relative z-10 flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                            </svg>
+                            Sign In
+                        </span>
+                    </button>
+                    <button id="tab-register" onclick="showAuthForm('register')" 
+                            class="relative py-3.5 px-6 rounded-lg font-bold transition-all duration-300 text-sm md:text-base overflow-hidden group">
+                        <span class="relative z-10 flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                            </svg>
+                            Register
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Login Form -->
+            <form id="form-login" class="space-y-6 hidden">
+                <!-- Username/Email Field -->
+                <div class="input-group">
+                    <div class="relative">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </div>
+                        <input type="text" name="login_id" id="login_id" placeholder=" " required 
+                               class="input-field peer !pl-12" autocomplete="username email">
+                        <label for="login_id" class="peer-label !left-12">Username or Email</label>
+                    </div>
+                </div>
+
+                <!-- Password Field -->
+                <div class="input-group">
+                    <div class="relative">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                        <input type="password" name="password" id="login_password" placeholder=" " required 
+                               class="input-field peer !pl-12" autocomplete="current-password">
+                        <label for="login_password" class="peer-label !left-12">Password</label>
+                    </div>
+                </div>
+
+                <!-- Remember Me -->
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-2.5 text-gray-400 cursor-pointer hover:text-white transition-colors group">
+                        <div class="relative">
+                            <input type="checkbox" class="peer sr-only">
+                            <div class="w-5 h-5 rounded border-2 border-gray-600 peer-checked:border-purple-500 peer-checked:bg-purple-500 transition-all duration-200"></div>
+                            <svg class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium">Remember me</span>
+                    </label>
+                </div>
+
+                <!-- Message -->
+                <p id="login-message" class="text-center text-sm min-h-[1.25rem] text-red-400 font-medium"></p>
+                
+                <!-- Submit Button -->
+                <button type="submit" id="login-btn" class="relative w-full py-4 px-6 rounded-xl font-bold text-base md:text-lg overflow-hidden bg-gradient-to-r from-purple-600 via-purple-500 to-cyan-500 hover:from-purple-500 hover:via-purple-600 hover:to-cyan-600 shadow-xl shadow-purple-500/40 hover:shadow-purple-500/60 transition-all duration-300 group border-2 border-purple-400/50 hover:border-purple-300">
+                    <span class="relative z-10 flex items-center justify-center gap-3 text-white">
+                        <span id="login-text">Sign In to Dashboard</span>
+                        <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                        <span id="login-spinner" class="spinner hidden"></span>
+                    </span>
+                </button>
+                
+                <!-- Switch to Register -->
+                <div class="text-center pt-4">
+                    <span class="text-gray-400 text-sm">New to <?php echo TOKEN_NAME; ?>?</span>
+                    <button type="button" onclick="showAuthForm('register')" class="ml-2 text-purple-400 hover:text-purple-300 font-bold transition-colors text-sm">
+                        Create Account →
+                    </button>
+                </div>
+            </form>
+
+            <!-- Register Form -->
+            <form id="form-register" class="space-y-6 hidden">
+                <!-- Username Field -->
+                <div class="input-group">
+                    <div class="relative">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </div>
+                        <input type="text" name="username" id="register_username" placeholder=" " required 
+                               class="input-field peer !pl-12" autocomplete="username">
+                        <label for="register_username" class="peer-label !left-12">Choose Username</label>
+                    </div>
+                </div>
+
+                <!-- Email Field -->
+                <div class="input-group">
+                    <div class="relative">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <input type="email" name="email" id="register_email" placeholder=" " required 
+                               class="input-field peer !pl-12" autocomplete="email">
+                        <label for="register_email" class="peer-label !left-12">Email Address</label>
+                    </div>
+                </div>
+
+                <!-- Password Field -->
+                <div class="input-group">
+                    <div class="relative">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                        <input type="password" name="password" id="register_password" placeholder=" " required 
+                               class="input-field peer !pl-12" minlength="6" autocomplete="new-password">
+                        <label for="register_password" class="peer-label !left-12">Create Password</label>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2 ml-1">Minimum 6 characters required</p>
+                </div>
+
+                <!-- Referral Field -->
+                <div class="input-group">
+                    <div class="relative">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                            </svg>
+                        </div>
+                        <input type="text" name="referrer_id" id="referrer_id" placeholder=" " 
+                               class="input-field peer !pl-12">
+                        <label for="referrer_id" class="peer-label !left-12">Referral Code (Optional)</label>
+                    </div>
+                </div>
+
+                <!-- Message -->
+                <p id="register-message" class="text-center text-sm min-h-[1.25rem] text-red-400 font-medium"></p>
+                
+                <!-- Bonus Banner -->
+                <div class="relative overflow-hidden rounded-xl bg-gradient-to-r from-emerald-900/40 via-cyan-900/40 to-emerald-900/40 border-2 border-emerald-500/50 p-4 shadow-xl shadow-emerald-500/20">
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"></div>
+                    <div class="relative z-10 flex items-center justify-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-lg">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-white font-bold text-lg">🎁 Welcome Bonus</div>
+                            <div class="text-emerald-300 text-sm font-semibold">
+                                Get <span class="text-white text-base"><?php echo number_format(KYC_BONUS, 0); ?> <?php echo TOKEN_SYMBOL; ?></span> instantly upon registration!
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <button type="submit" id="register-btn" class="relative w-full py-4 px-6 rounded-xl font-bold text-base md:text-lg overflow-hidden bg-gradient-to-r from-emerald-500 via-cyan-500 to-emerald-500 hover:from-emerald-600 hover:via-cyan-600 hover:to-emerald-600 shadow-xl shadow-emerald-500/40 hover:shadow-emerald-500/60 transition-all duration-300 group border-2 border-emerald-400/50 hover:border-emerald-300">
+                    <span class="relative z-10 flex items-center justify-center gap-3 text-black">
+                        <svg class="w-6 h-6 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        <span id="register-text">Create Account & Claim Bonus</span>
+                        <span id="register-spinner" class="spinner !border-black/30 !border-t-black hidden"></span>
+                    </span>
+                </button>
+                
+                <!-- Switch to Login -->
+                <div class="text-center pt-4">
+                    <span class="text-gray-400 text-sm">Already have an account?</span>
+                    <button type="button" onclick="showAuthForm('login')" class="ml-2 text-purple-400 hover:text-purple-300 font-bold transition-colors text-sm">
+                        Sign In →
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Trust Badges -->
+            <div class="mt-8 pt-8 border-t border-white/10">
+                <div class="flex items-center justify-center gap-6 flex-wrap">
+                    <div class="flex items-center gap-2 text-gray-400 text-xs">
+                        <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="font-medium">256-bit Encryption</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-400 text-xs">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.333 9-6.03 9-11.623 0-1.31-.21-2.571-.598-3.751A11.959 11.959 0 0 1 12 2.964Z"/>
+                        </svg>
+                        <span class="font-medium">Solana Secured</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-400 text-xs">
+                        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                        <span class="font-medium">GDPR Compliant</span>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <form id="form-login" class="space-y-5 hidden">
-            <div class="input-group"> 
-                <input type="text" name="login_id" id="login_id" placeholder=" " required 
-                       class="input-field peer" autocomplete="username email">
-                <label for="login_id" class="peer-label">Username or Email</label>
-            </div>
-
-            <div class="input-group"> 
-                <input type="password" name="password" id="login_password" placeholder=" " required 
-                       class="input-field peer" autocomplete="current-password">
-                <label for="login_password" class="peer-label">Password</label>
-            </div>
-
-            <div class="flex items-center justify-between text-xs sm:text-sm -mt-2 mb-4"> 
-                <label class="flex items-center gap-2 text-gray-400 cursor-pointer hover:text-white transition-colors">
-                    <input type="checkbox" class="w-4 h-4 rounded border-gray-600 text-purple-600 focus:ring-purple-500 focus:ring-offset-gray-900 bg-gray-700 accent-purple-600">
-                    <span>Remember me</span>
-                </label>
-            </div>
-
-            <p id="login-message" class="text-center text-sm min-h-[1.25rem] text-red-400"></p> 
-            
-            <button type="submit" id="login-btn" class="btn-primary w-full !py-3 !text-base group !from-purple-600 !to-cyan-600 !border-purple-500 !shadow-purple-500/30">
-                 <span id="login-text">Sign In</span>
-                 <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform hidden sm:inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                 <span id="login-spinner" class="spinner hidden"></span>
-            </button>
-            
-            <div class="text-center text-sm text-gray-400 pt-5">
-                 Don't have an account? 
-                 <button type="button" onclick="showAuthForm('register')" class="text-purple-400 hover:text-purple-300 font-semibold transition-colors underline underline-offset-2"> 
-                    Create one 
-                 </button> 
-            </div>
-        </form>
-
-        <form id="form-register" class="space-y-5 hidden">
-             <div class="input-group"> 
-                <input type="text" name="username" id="register_username" placeholder=" " required class="input-field peer" autocomplete="username">
-                <label for="register_username" class="peer-label">Username</label>
-            </div>
-             <div class="input-group"> 
-                <input type="email" name="email" id="register_email" placeholder=" " required class="input-field peer" autocomplete="email">
-                <label for="register_email" class="peer-label">Email Address</label>
-            </div>
-             <div class="input-group"> 
-                <input type="password" name="password" id="register_password" placeholder=" " required class="input-field peer" minlength="6" autocomplete="new-password">
-                <label for="register_password" class="peer-label">Password (min 6 chars)</label>
-            </div>
-             <div class="input-group"> 
-                <input type="text" name="referrer_id" id="referrer_id" placeholder=" " class="input-field peer">
-                <label for="referrer_id" class="peer-label">Referral ID (Optional)</label>
-            </div>
-
-            <p id="register-message" class="text-center text-sm min-h-[1.25rem] text-red-400"></p>
-            
-            <button type="submit" id="register-btn" class="btn-primary w-full !py-3 !text-base group">
-                 <span id="register-text">Register & Claim Bonus</span>
-                 <span id="register-spinner" class="spinner hidden"></span>
-            </button>
-            
-             <div class="bg-gradient-to-r from-emerald-900/30 to-cyan-900/30 border border-emerald-500/30 rounded-lg p-3 text-center text-xs mt-5">
-                 <span class="text-emerald-300">🎁 Sign up to get <strong class="text-white"><?php echo number_format(KYC_BONUS, 0); ?> <?php echo TOKEN_SYMBOL; ?></strong> instantly!</span>
-             </div>
-             
-            <div class="text-center text-sm text-gray-400 pt-5">
-                Already have an account? 
-                <button type="button" onclick="showAuthForm('login')" class="text-purple-400 hover:text-purple-300 font-semibold transition-colors underline underline-offset-2"> 
-                    Sign in 
-                </button> 
-            </div>
-        </form>
-        
     </div>
 </div>
+
+<style>
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+.animate-shimmer {
+    animation: shimmer 3s infinite;
+}
+
+/* Enhanced tab styling */
+#tab-login, #tab-register {
+    color: #9ca3af;
+    background: transparent;
+}
+
+#tab-login.active-link, #tab-register.active-link {
+    background: linear-gradient(135deg, rgba(147, 51, 234, 0.8), rgba(6, 182, 212, 0.8)) !important;
+    color: white !important;
+    box-shadow: 0 8px 20px rgba(147, 51, 234, 0.4);
+}
+
+#tab-login:not(.active-link):hover, #tab-register:not(.active-link):hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+</style>
