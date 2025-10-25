@@ -44,13 +44,13 @@ $page = $_GET['p'] ?? ($is_logged_in ? 'dashboard' : 'home');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PITHOS Protocol | The Immutable Foundation for Digital Assets</title>
-    <meta name="description" content="Join PITHOS Protocol - The most secure, immutable token on Solana with permanently locked contracts and zero rug risk.">
+    <title><?php echo APP_NAME; ?> | The Immutable Foundation for Digital Assets</title>
+    <meta name="description" content="Join <?php echo APP_NAME; ?> - The most secure, immutable token on Solana with permanently locked contracts and zero rug risk.">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #9945FF; 
@@ -244,14 +244,18 @@ $page = $_GET['p'] ?? ($is_logged_in ? 'dashboard' : 'home');
             font-size: 1rem; 
         }
         .peer-label { 
-            position: absolute; left: 1.5rem; top: 1.35rem; 
+            position: absolute; left: 1.5rem; top: 1.15rem; /* Adjusted for Inter font */
             color: rgba(255, 255, 255, 0.5); 
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
             pointer-events: none; background: transparent; padding: 0 0.5rem; font-weight: 500;
+            font-size: 1rem;
         }
         .input-field:focus~.peer-label, .input-field:not(:placeholder-shown)~.peer-label { 
-            transform: translateY(-2.5rem) scale(0.85); color: var(--primary-light); 
-            background: #0a0a0f; padding: 0 0.6rem;
+            transform: translateY(-2.2rem) scale(0.85); color: var(--primary-light); 
+            /* Use a matching background color for the label text "cutout" */
+            background: linear-gradient(to bottom, transparent 40%, var(--card-bg) 40%); 
+            padding: 0 0.6rem;
+            font-size: 0.9rem;
         }
         .input-field:focus { 
             border-color: var(--primary-light); 
@@ -319,17 +323,26 @@ $page = $_GET['p'] ?? ($is_logged_in ? 'dashboard' : 'home');
         .glow-primary { box-shadow: 0 0 20px rgba(153, 69, 255, 0.3), 0 0 40px rgba(153, 69, 255, 0.2); }
         .glow-secondary { box-shadow: 0 0 20px rgba(20, 241, 149, 0.3), 0 0 40px rgba(20, 241, 149, 0.2); }
         
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
-        ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--primary), var(--secondary)); border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, var(--primary-light), var(--secondary)); }
+        /* --- Enhanced Scrollbar Styles --- */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); border-radius: 5px; }
+        ::-webkit-scrollbar-thumb { 
+            background: linear-gradient(180deg, var(--primary), var(--secondary)); 
+            border-radius: 5px; 
+            border: 2px solid rgba(0,0,0,0.3); /* Add border to make it look inset */
+            transition: background 0.2s ease;
+        }
+        ::-webkit-scrollbar-thumb:hover { 
+            background: linear-gradient(180deg, var(--primary-light), var(--secondary)); 
+        }
+        ::-webkit-scrollbar-corner { background: transparent; }
     </style>
 </head>
 
 <body class="min-h-screen antialiased">
     <div id="preloader">
         <div class="spinner"></div>
-        <p>Loading PITHOS Protocol...</p>
+        <p>Loading <?php echo APP_NAME; ?>...</p>
     </div>
 
     <div id="loading-bar-container">
@@ -348,37 +361,47 @@ $page = $_GET['p'] ?? ($is_logged_in ? 'dashboard' : 'home');
         <header class="sticky top-0 z-50" id="main-header">
             <div class="container">
                 <nav class="flex items-center justify-between py-3.5 h-16">
-                    <a href="index.php" class="flex items-center gap-2.5 transition-all duration-300 hover:opacity-80 hover:scale-105 flex-shrink-0"> 
+                    <a href="index.php<?php echo $is_logged_in ? '?p=dashboard' : ''; ?>" class="flex items-center gap-2.5 transition-all duration-300 hover:opacity-80 hover:scale-105 flex-shrink-0"> 
                          <svg class="w-9 h-9 text-[var(--primary)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25L3 7.5m18 0v9l-9 5.25-9-5.25v-9m0 0L12 2.25l9 5.25M3 7.5l9 5.25l9-5.25" />
                         </svg>
-                        <span class="logo-text">PITHOS</span>
+                        <span class="logo-text"><?php echo TOKEN_NAME; ?></span>
                     </a>
                     
                     <div class="hidden md:flex items-center justify-end flex-grow gap-1 ml-8">
                         <?php 
-                            $base_nav_links = ['home' => 'Home', 'tokenomics' => 'Tokenomics']; 
-                            $logged_in_links = ['dashboard' => 'Dashboard', 'wallet' => 'Wallet', 'referrals' => 'Referrals', 'profile' => 'Profile'];
+                            // Define links - Home is now conditional
+                            $nav_links = [];
+                            if (!$is_logged_in) {
+                                $nav_links['home'] = 'Home'; // Only show Home if NOT logged in
+                            }
+                            $nav_links['tokenomics'] = 'Tokenomics'; // Always show Tokenomics
                             
-                            $current_nav_links = $is_logged_in ? array_merge($base_nav_links, $logged_in_links) : $base_nav_links;
-
-                            if (!$is_logged_in && $page === 'home') {
-                                unset($current_nav_links['home']); 
+                            if ($is_logged_in) {
+                                $nav_links['dashboard'] = 'Dashboard';
+                                $nav_links['wallet'] = 'Wallet';
+                                $nav_links['referrals'] = 'Referrals';
+                                $nav_links['profile'] = 'Profile';
                             }
-                            if ($is_logged_in && isset($current_nav_links['home'])) {
-                                $current_nav_links['home'] = ['text' => 'Home', 'url' => 'index.php']; 
-                            } else if (isset($current_nav_links['home'])) {
-                                 $current_nav_links['home'] = ['text' => 'Home', 'url' => 'index.php'];
-                            }
-                        
-                            foreach ($current_nav_links as $link_page => $link_data) {
-                                $link_text = is_array($link_data) ? $link_data['text'] : $link_data;
-                                $link_url = is_array($link_data) ? $link_data['url'] : 'index.php?p=' . $link_page;
+                            
+                            foreach ($nav_links as $link_page => $link_text) {
+                                $link_url = 'index.php?p=' . $link_page;
 
-                                $is_active = ($page === $link_page) || 
-                                             ($page === 'dashboard' && $link_page === 'home' && $is_logged_in) || 
-                                             ($page === 'home' && $link_page === 'home' && !$is_logged_in) ||
-                                             ($page === 'tokenomics' && $link_page === 'tokenomics'); 
+                                // Special case for Home link when not logged in
+                                if ($link_page === 'home' && !$is_logged_in) {
+                                    $link_url = 'index.php';
+                                }
+
+                                // Active state logic
+                                $is_active = ($page === $link_page);
+                                // If logged in and on dashboard, treat dashboard link as active
+                                if ($is_logged_in && $page === 'dashboard' && $link_page === 'dashboard') {
+                                    $is_active = true; 
+                                }
+                                // If not logged in and on home, treat home link as active
+                                if (!$is_logged_in && ($page === 'home' || $page === 'dashboard') && $link_page === 'home') {
+                                     $is_active = true; 
+                                }
 
                                 $class = 'nav-link ' . ($is_active ? 'active-link' : '');
                                 echo '<a href="' . $link_url . '" class="' . $class . '">' . $link_text . '</a>';
@@ -426,13 +449,19 @@ $page = $_GET['p'] ?? ($is_logged_in ? 'dashboard' : 'home');
                             <span class="text-base text-violet-400 font-semibold">Hello, <?php echo htmlspecialchars($current_username); ?></span>
                         </div>
                         <?php
-                            foreach ($current_nav_links as $link_page => $link_data) {
-                                $link_text = is_array($link_data) ? $link_data['text'] : $link_data;
-                                $link_url = is_array($link_data) ? $link_data['url'] : 'index.php?p=' . $link_page;
-                                $is_active = ($page === $link_page) || 
-                                             ($page === 'dashboard' && $link_page === 'home' && $is_logged_in) || 
-                                             ($page === 'home' && $link_page === 'home' && !$is_logged_in) ||
-                                             ($page === 'tokenomics' && $link_page === 'tokenomics');
+                            // Use the same $nav_links logic for mobile
+                            foreach ($nav_links as $link_page => $link_text) {
+                                $link_url = 'index.php?p=' . $link_page;
+                                if ($link_page === 'home') $link_url = 'index.php'; // Handle home link
+
+                                // Active state logic
+                                $is_active = ($page === $link_page);
+                                if ($is_logged_in && $page === 'dashboard' && $link_page === 'dashboard') {
+                                    $is_active = true; 
+                                }
+                                if (!$is_logged_in && ($page === 'home' || $page === 'dashboard') && $link_page === 'home') {
+                                     $is_active = true; 
+                                }
 
                                 $class = 'mobile-nav-link ' . ($is_active ? 'active-link' : '');
                                 echo '<a href="' . $link_url . '" class="' . $class . '">' . $link_text . '</a>';
@@ -443,7 +472,7 @@ $page = $_GET['p'] ?? ($is_logged_in ? 'dashboard' : 'home');
                         </div>
                      
                      <?php else: ?>
-                         <a href="index.php" class="mobile-nav-link <?php echo ($page === 'home' ? 'active-link' : ''); ?>">Home</a>
+                         <a href="index.php" class="mobile-nav-link <?php echo ($page === 'home' || $page === 'dashboard' ? 'active-link' : ''); ?>">Home</a>
                          <a href="index.php?p=tokenomics" class="mobile-nav-link <?php echo ($page === 'tokenomics' ? 'active-link' : ''); ?>">Tokenomics</a>
                          <div class="mt-auto pt-6 space-y-4">
                             <a href="#auth" onclick="showAuthForm('login'); event.preventDefault(); document.querySelector('#auth').scrollIntoView({ behavior: 'smooth' });" class="mobile-nav-link text-center border border-purple-500/50">Sign In</a>
@@ -457,6 +486,9 @@ $page = $_GET['p'] ?? ($is_logged_in ? 'dashboard' : 'home');
         <main class="flex-grow">
              <div class="py-10 md:py-16"> 
                 <?php
+                    // Define TOKEN_SYMBOL if not set (it's in config.php)
+                    if (!defined('TOKEN_SYMBOL')) define('TOKEN_SYMBOL', 'PITH');
+                    
                     switch ($page) {
                         case 'profile': 
                             if ($is_logged_in) require_once(ROOT_DIR . '/views/profile.php'); 
@@ -480,8 +512,10 @@ $page = $_GET['p'] ?? ($is_logged_in ? 'dashboard' : 'home');
                         case 'home': 
                         default: 
                             if ($is_logged_in && $page === 'home') {
-                                require_once(ROOT_DIR . '/views/dashboard.php');
+                                // If logged in, 'home' should redirect or show dashboard content
+                                require_once(ROOT_DIR . '/views/dashboard.php'); 
                             } else {
+                                // If not logged in, show the actual homepage content
                                 require_once(ROOT_DIR . '/views/home.php'); 
                             }
                             break;
@@ -498,7 +532,7 @@ $page = $_GET['p'] ?? ($is_logged_in ? 'dashboard' : 'home');
                             <svg class="w-8 h-8 text-[var(--primary)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25L3 7.5m18 0v9l-9 5.25-9-5.25v-9m0 0L12 2.25l9 5.25M3 7.5l9 5.25l9-5.25" />
                             </svg>
-                            <h3 class="font-bold text-xl text-white font-heading">PITHOS Protocol</h3>
+                            <h3 class="font-bold text-xl text-white font-heading"><?php echo APP_NAME; ?></h3>
                         </div>
                         <p class="text-sm text-gray-400 leading-relaxed mb-4">Building the immutable digital foundation on the Solana ecosystem. Trust guaranteed, yield optimized.</p>
                         <div class="flex gap-3">
@@ -533,7 +567,7 @@ $page = $_GET['p'] ?? ($is_logged_in ? 'dashboard' : 'home');
                     </div>
                 </div>
                 <div class="text-center pt-8 mt-10 border-t border-[var(--border-color-light)]"> 
-                    <p class="text-gray-500 text-sm">&copy; <?php echo date("Y"); ?> PITHOS Protocol. All Rights Reserved. Built on Solana.</p>
+                    <p class="text-gray-500 text-sm">&copy; <?php echo date("Y"); ?> <?php echo APP_NAME; ?>. All Rights Reserved. Built on Solana.</p>
                 </div>
             </div>
         </footer>
@@ -543,8 +577,11 @@ $page = $_GET['p'] ?? ($is_logged_in ? 'dashboard' : 'home');
     <?php
         if ($is_logged_in) {
             switch($page) {
-                case 'dashboard': echo '<script src="assets/dashboard.js"></script>'; break;
-                case 'profile': echo '<script src="assetsIS/profile.js"></script>'; break;
+                case 'dashboard': 
+                    echo '<script> window.TOKEN_RATE = ' . TOKEN_RATE . '; </script>'; // Pass TOKEN_RATE to JS
+                    echo '<script src="assets/dashboard.js"></script>'; 
+                    break;
+                case 'profile': echo '<script src="assets/profile.js"></script>'; break; 
                 case 'wallet': echo '<script src="assets/wallet.js"></script>'; break;
                 case 'referrals': echo '<script src="assets/referrals.js"></script>'; break;
             }
@@ -632,31 +669,35 @@ $page = $_GET['p'] ?? ($is_logged_in ? 'dashboard' : 'home');
                  });
              });
 
+            // This is the correct showAuthForm function (from previous turn)
             window.showAuthForm = function(type) {
-                const loginTab = $('#tab-login'); const registerTab = $('#tab-register');
-                const loginForm = $('#form-login'); const registerForm = $('#form-register');
-                const forgotForm = $('#form-forgot'); 
-                loginForm.addClass('hidden'); registerForm.addClass('hidden'); if(forgotForm.length) forgotForm.addClass('hidden'); 
+                const loginTab = $('#tab-login');
+                const registerTab = $('#tab-register');
+                const loginForm = $('#form-login');
+                const registerForm = $('#form-register');
+                
+                loginForm.addClass('hidden');
+                registerForm.addClass('hidden');
+                
                 const activeClasses = 'bg-gradient-to-r from-purple-600 to-cyan-600 text-white shadow-md';
                 const inactiveClasses = 'text-gray-400 hover:text-white hover:bg-white/5';
+                
                 loginTab.removeClass(activeClasses).addClass(inactiveClasses);
                 registerTab.removeClass(activeClasses).addClass(inactiveClasses);
-                $('#login-message').text(''); $('#register-message').text(''); if ($('#forgot-message').length) $('#forgot-message').text('');
+                
+                $('#login-message').text('');
+                $('#register-message').text('');
+                
                 if (type === 'login') {
                     loginForm.removeClass('hidden');
                     loginTab.removeClass(inactiveClasses).addClass(activeClasses);
                 } else if (type === 'register') {
                     registerForm.removeClass('hidden');
-                    registerTab.removeClass(activeClasses).addClass(inactiveClasses);
-                    if($('#otp-section').length) $('#otp-section').addClass('hidden').hide(); 
-                    if($('#send-otp-btn').length) $('#send-otp-btn').removeClass('hidden');
-                    if($('#register-btn').length) {
-                         if ($('#send-otp-btn').length) { $('#register-btn').addClass('hidden').removeClass('flex'); } 
-                         else { $('#register-btn').removeClass('hidden').addClass('flex'); }
-                    }
+                    registerTab.removeClass(inactiveClasses).addClass(activeClasses);
                 }
             }
 
+            // URL param check to show correct form on load
             if ($('#form-login').length) { 
                  const urlParams = new URLSearchParams(window.location.search); 
                  const ref = urlParams.get('ref'); 
@@ -666,8 +707,9 @@ $page = $_GET['p'] ?? ($is_logged_in ? 'dashboard' : 'home');
                     showAuthForm('register'); 
                  } else if (loginParam) { 
                     showAuthForm('login'); 
-                 } else { 
-                    showAuthForm('login'); 
+                 } else if (<?php echo $is_logged_in ? 'false' : 'true'; ?>) {
+                    // Only default to a form if NOT logged in
+                    showAuthForm('login'); // Default to login
                  }
             }
 

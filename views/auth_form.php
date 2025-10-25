@@ -1,14 +1,14 @@
 <?php
-// Premium Auth Form Component
+// Premium Auth Form Component - Redesigned for professionalism
 ?>
-<div class="glass-card p-6 md:p-8 relative overflow-hidden shadow-xl shadow-purple-900/30 border border-purple-500/20">
+<div class="glass-card p-6 md:p-8 relative overflow-hidden shadow-xl shadow-purple-900/30 border border-purple-500/20" style="--card-bg: <?php echo 'rgba(20, 20, 30, 0.85)'; ?>;">
     <div class="absolute -top-16 -right-16 w-40 h-40 bg-purple-600/20 rounded-full blur-3xl opacity-60"></div>
     <div class="absolute -bottom-16 -left-16 w-40 h-40 bg-cyan-600/20 rounded-full blur-3xl opacity-60"></div>
     
     <div class="relative z-10">
         <h2 class="text-2xl md:text-3xl font-bold text-center mb-6 font-heading">
             <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-cyan-400 to-purple-400">
-                Access Your PITHOS Wallet
+                Access Your <?php echo TOKEN_NAME; ?> Wallet
             </span>
         </h2>
         
@@ -45,7 +45,7 @@
 
             <p id="login-message" class="text-center text-sm min-h-[1.25rem] text-red-400"></p> 
             
-            <button type="submit" id="login-btn" class="btn-primary w-full !py-3 !text-base group">
+            <button type="submit" id="login-btn" class="btn-primary w-full !py-3 !text-base group !from-purple-600 !to-cyan-600 !border-purple-500 !shadow-purple-500/30">
                  <span id="login-text">Sign In</span>
                  <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform hidden sm:inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
                  <span id="login-spinner" class="spinner hidden"></span>
@@ -85,7 +85,7 @@
             </button>
             
              <div class="bg-gradient-to-r from-emerald-900/30 to-cyan-900/30 border border-emerald-500/30 rounded-lg p-3 text-center text-xs mt-5">
-                 <span class="text-emerald-300">🎁 Sign up to get <strong class="text-white"><?php echo number_format(KYC_BONUS); ?> <?php echo TOKEN_SYMBOL; ?></strong> instantly!</span>
+                 <span class="text-emerald-300">🎁 Sign up to get <strong class="text-white"><?php echo number_format(KYC_BONUS, 0); ?> <?php echo TOKEN_SYMBOL; ?></strong> instantly!</span>
              </div>
              
             <div class="text-center text-sm text-gray-400 pt-5">

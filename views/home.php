@@ -2,7 +2,6 @@
 // Premium Home Page View - ENHANCED UI
 // Includes views/auth_form.php
 ?>
-<!-- Hero Section -->
 <section class="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
     <div class="absolute inset-0 z-0 opacity-30">
         <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-gradient-to-br from-purple-600/50 to-transparent rounded-full blur-[120px]"></div>
@@ -11,7 +10,6 @@
     
     <div class="container relative z-10">
         <div class="grid lg:grid-cols-2 gap-10 md:gap-16 items-center">
-            <!-- Left Column - Hero Content -->
             <div class="lg:pr-12 animate-fadeIn" style="animation-delay: 100ms;">
                 <div class="inline-block mb-4 md:mb-6 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/30 backdrop-blur-sm shadow-md">
                     <span class="text-purple-300 text-xs md:text-sm font-semibold tracking-wide flex items-center gap-1.5">
@@ -26,16 +24,15 @@
                 </h1>
                 
                 <p class="text-lg md:text-xl text-gray-300 mb-8 md:mb-10 leading-relaxed max-w-xl">
-                    PITHOS delivers <strong class="text-white font-semibold">unshakeable security</strong> with permanently locked contract authority on Solana. <span class="text-cyan-400">Trust guaranteed</span>, yield optimized.
+                    <?php echo TOKEN_NAME; ?> delivers <strong class="text-white font-semibold">unshakeable security</strong> with permanently locked contract authority on Solana. <span class="text-cyan-400">Trust guaranteed</span>, yield optimized.
                 </p>
 
                 <div class="flex flex-col sm:flex-row flex-wrap gap-4 mb-10 md:mb-12">
                     <a href="#auth" onclick="showAuthForm('register')" class="btn-primary py-3 px-6 md:py-3.5 md:px-7 text-base group">
                         <svg class="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/> </svg>
-                        <span>Get 1,000 FREE Tokens</span>
+                        <span>Get <?php echo number_format(KYC_BONUS, 0); ?> FREE Tokens</span>
                     </a>
                     
-                    <!-- Updated Whitepaper Link with Download Attribute -->
                     <a href="assets/PITHOS_Protocol_Whitepaper.pdf" download="PITHOS_Protocol_Whitepaper.pdf" target="_blank" class="btn-secondary py-3 px-6 md:py-3.5 md:px-7 text-base group">
                          <svg class="w-5 h-5 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/> </svg>
                         <span>View Whitepaper</span>
@@ -83,7 +80,7 @@
             <div class="inline-block mb-4 md:mb-5 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 backdrop-blur-sm shadow-md">
                 <span class="text-cyan-300 text-sm font-semibold tracking-wide flex items-center gap-1.5">
                      <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
-                    Why Choose PITHOS
+                    Why Choose <?php echo TOKEN_NAME; ?>
                 </span>
             </div>
             <h2 class="font-heading text-4xl md:text-5xl font-bold mb-4 md:mb-5">
@@ -138,131 +135,8 @@
                  <div class="mt-4 pt-4 border-t border-[var(--border-color-light)]">
                     <span class="text-sm text-yellow-400 font-semibold flex items-center gap-1.5">
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5 5a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2h-8a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h4a1 1 0 100-2H8z"></path></svg>
-                        <?php echo number_format(REFERRAL_BONUS); ?> PITH per referral
+                        <?php echo number_format(REFERRAL_BONUS, 0); ?> <?php echo TOKEN_SYMBOL; ?> per referral
                     </span>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Trusted & Supported By — Compact Premium List (Icon + Text) -->
-<section class="py-16 md:py-20">
-  <div class="max-w-4xl mx-auto px-6">
-    <h2 class="font-heading text-3xl md:text-4xl font-extrabold text-white text-center mb-8">
-      Trusted &amp; Supported By
-    </h2>
-
-    <div class="backed-list glass-card p-6 md:p-8 rounded-2xl">
-      <!-- Row -->
-      <div class="flex flex-col sm:flex-row sm:justify-center sm:gap-6 gap-4">
-        
-        <!-- Item: Binance -->
-        <a href="https://www.binance.com" target="_blank" rel="noopener noreferrer" class="exchange-pill" title="Binance">
-          <span class="exchange-icon">
-            <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png" alt="Binance" loading="lazy">
-          </span>
-          <span class="exchange-text">
-            <span class="exchange-title">Binance</span>
-            <span class="exchange-sub">Global Exchange</span>
-          </span>
-        </a>
-
-        <!-- Item: Coinbase -->
-        <a href="https://www.coinbase.com" target="_blank" rel="noopener noreferrer" class="exchange-pill" title="Coinbase">
-          <span class="exchange-icon">
-            <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/89.png" alt="Coinbase" loading="lazy">
-          </span>
-          <span class="exchange-text">
-            <span class="exchange-title">Coinbase</span>
-            <span class="exchange-sub">NASDAQ Listed</span>
-          </span>
-        </a>
-
-        <!-- Item: Kraken -->
-        <a href="https://www.kraken.com" target="_blank" rel="noopener noreferrer" class="exchange-pill" title="Kraken">
-          <span class="exchange-icon">
-            <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/24.png" alt="Kraken" loading="lazy">
-          </span>
-          <span class="exchange-text">
-            <span class="exchange-title">Kraken</span>
-            <span class="exchange-sub">Trusted Since 2011</span>
-          </span>
-        </a>
-
-        <!-- Item: OKX -->
-        <a href="https://www.okx.com" target="_blank" rel="noopener noreferrer" class="exchange-pill" title="OKX">
-          <span class="exchange-icon">
-            <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/294.png" alt="OKX" loading="lazy">
-          </span>
-          <span class="exchange-text">
-            <span class="exchange-title">OKX</span>
-            <span class="exchange-sub">Global Liquidity</span>
-          </span>
-        </a>
-
-        <!-- Item: KuCoin -->
-        <a href="https://www.kucoin.com" target="_blank" rel="noopener noreferrer" class="exchange-pill" title="KuCoin">
-          <span class="exchange-icon">
-            <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/302.png" alt="KuCoin" loading="lazy">
-          </span>
-          <span class="exchange-text">
-            <span class="exchange-title">KuCoin</span>
-            <span class="exchange-sub">Top Token Listings</span>
-          </span>
-        </a>
-
-      </div>
-    </div>
-  </div>
-</section>
-
-
-<section class="py-16 md:py-24 relative bg-black/10">
-    <div class="container animate-fadeIn" style="animation-delay: 800ms;">
-        <div class="glass-card p-8 md:p-12 grid md:grid-cols-2 gap-10 md:gap-16 items-center">
-            <div>
-                 <div class="inline-block mb-4 md:mb-5 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/30 backdrop-blur-sm shadow-md">
-                    <span class="text-purple-300 text-sm font-semibold tracking-wide flex items-center gap-1.5">
-                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                        Experienced Builders
-                    </span>
-                </div>
-                <h2 class="font-heading text-3xl md:text-4xl font-bold mb-4 md:mb-5">
-                    From a Proven Team
-                </h2>
-                <p class="text-base md:text-lg text-gray-400 leading-relaxed">
-                    The PITHOS Protocol team comprises seasoned developers and strategists with a track record of launching multiple successful blockchain projects. We bring expertise and a commitment to long-term value creation.
-                </p>
-            </div>
-            <div class="flex justify-center items-center opacity-40">
-                 <svg class="w-40 h-40 md:w-56 md:h-56 text-purple-400 " fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.539 1.118l-3.975-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.539-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                </svg>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="py-16 md:py-24 relative">
-    <div class="container animate-fadeIn" style="animation-delay: 900ms;">
-        <div class="glass-card p-8 md:p-12 border-2 border-purple-500/20 shadow-xl shadow-purple-900/30">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-                <div>
-                    <div class="font-heading text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 mb-2">1B</div>
-                    <div class="text-gray-400 text-xs md:text-sm uppercase tracking-wider font-medium">Max Supply</div>
-                </div>
-                <div>
-                    <div class="font-heading text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500 mb-2">100%</div>
-                    <div class="text-gray-400 text-xs md:text-sm uppercase tracking-wider font-medium">Immutable</div>
-                </div>
-                <div>
-                    <div class="font-heading text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-2">25%</div>
-                    <div class="text-gray-400 text-xs md:text-sm uppercase tracking-wider font-medium">Max APY</div>
-                </div>
-                <div>
-                    <div class="font-heading text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2">0</div>
-                    <div class="text-gray-400 text-xs md:text-sm uppercase tracking-wider font-medium">Rug Risk</div>
                 </div>
             </div>
         </div>
@@ -271,7 +145,7 @@
 
 <style>
 /* Glass card wrapper (keeps parity with your theme) */
-.glass-card.backed-list {
+.backed-list.glass-card {
   background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
   border: 1px solid rgba(255,255,255,0.06);
   backdrop-filter: blur(8px);
@@ -287,7 +161,7 @@
   padding: 10px 14px;
   border-radius: 12px;
   text-decoration: none;
-  transition: background 180ms ease;
+  transition: all 180ms ease;
   min-width: 210px;
   color: inherit;
 }
@@ -342,7 +216,7 @@
   background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
   cursor: pointer;
   transform: translateY(-3px);
-  transition: transform 160ms ease, background 160ms ease;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
 }
 
 /* Responsiveness: stack tight on small screens */
@@ -361,4 +235,118 @@
   }
 }
 </style>
+<section class="py-16 md:py-20">
+  <div class="max-w-4xl mx-auto px-6 animate-fadeIn" style="animation-delay: 700ms;">
+    <h2 class="font-heading text-3xl md:text-4xl font-extrabold text-white text-center mb-8">
+      Trusted &amp; Supported By
+    </h2>
 
+    <div class="backed-list glass-card p-6 md:p-8 rounded-2xl">
+      <div class="flex flex-col sm:flex-row sm:justify-center sm:gap-6 gap-4">
+        
+        <a href="https//www.binance.com" target="_blank" rel="noopener noreferrer" class="exchange-pill" title="Binance">
+          <span class="exchange-icon">
+            <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png" alt="Binance" loading="lazy">
+          </span>
+          <span class="exchange-text">
+            <span class="exchange-title">Binance</span>
+            <span class="exchange-sub">Global Exchange</span>
+          </span>
+        </a>
+
+        <a href="https//www.coinbase.com" target="_blank" rel="noopener noreferrer" class="exchange-pill" title="Coinbase">
+          <span class="exchange-icon">
+            <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/89.png" alt="Coinbase" loading="lazy">
+          </span>
+          <span class="exchange-text">
+            <span class="exchange-title">Coinbase</span>
+            <span class="exchange-sub">NASDAQ Listed</span>
+          </span>
+        </a>
+
+        <a href="https//www.kraken.com" target="_blank" rel="noopener noreferrer" class="exchange-pill" title="Kraken">
+          <span class="exchange-icon">
+            <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/24.png" alt="Kraken" loading="lazy">
+          </span>
+          <span class="exchange-text">
+            <span class="exchange-title">Kraken</span>
+            <span class="exchange-sub">Trusted Since 2011</span>
+          </span>
+        </a>
+
+        <a href="https//www.okx.com" target="_blank" rel="noopener noreferrer" class="exchange-pill" title="OKX">
+          <span class="exchange-icon">
+            <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/294.png" alt="OKX" loading="lazy">
+          </span>
+          <span class="exchange-text">
+            <span class="exchange-title">OKX</span>
+            <span class="exchange-sub">Global Liquidity</span>
+          </span>
+        </a>
+
+        <a href="https//www.kucoin.com" target="_blank" rel="noopener noreferrer" class="exchange-pill" title="KuCoin">
+          <span class="exchange-icon">
+            <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/302.png" alt="KuCoin" loading="lazy">
+          </span>
+          <span class="exchange-text">
+            <span class="exchange-title">KuCoin</span>
+            <span class="exchange-sub">Top Token Listings</span>
+          </span>
+        </a>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="py-16 md:py-24 relative bg-black/10">
+    <div class="container animate-fadeIn" style="animation-delay: 800ms;">
+        <div class="glass-card p-8 md:p-12 grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+            <div>
+                 <div class="inline-block mb-4 md:mb-5 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/30 backdrop-blur-sm shadow-md">
+                    <span class="text-purple-300 text-sm font-semibold tracking-wide flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        Experienced Builders
+                    </span>
+                </div>
+                <h2 class="font-heading text-3xl md:text-4xl font-bold mb-4 md:mb-5">
+                    From a Proven Team
+                </h2>
+                <p class="text-base md:text-lg text-gray-400 leading-relaxed">
+                    The <?php echo TOKEN_NAME; ?> Protocol team comprises seasoned developers and strategists with a track record of launching successful blockchain projects. We bring expertise and a commitment to long-term value.
+                </p>
+            </div>
+            <div class="flex justify-center items-center opacity-40">
+                 <svg class="w-40 h-40 md:w-56 md:h-56 text-purple-400 " fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.539 1.118l-3.975-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.539-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-16 md:py-24 relative">
+    <div class="container animate-fadeIn" style="animation-delay: 900ms;">
+        <div class="glass-card p-8 md:p-12 border-2 border-purple-500/20 shadow-xl shadow-purple-900/30">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                <div>
+                    <div class="font-heading text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 mb-2">1B</div>
+                    <div class="text-gray-400 text-xs md:text-sm uppercase tracking-wider font-medium">Max Supply</div>
+                </div>
+                <div>
+                    <div class="font-heading text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500 mb-2">100%</div>
+                    <div class="text-gray-400 text-xs md:text-sm uppercase tracking-wider font-medium">Immutable</div>
+                </div>
+                <div>
+                    <div class="font-heading text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-2">25%</div>
+                    <div class="text-gray-400 text-xs md:text-sm uppercase tracking-wider font-medium">Max APY</div>
+                </div>
+                <div>
+                    <div class="font-heading text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2">0</div>
+                    <div class="text-gray-400 text-xs md:text-sm uppercase tracking-wider font-medium">Rug Risk</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

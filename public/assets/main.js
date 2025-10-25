@@ -5,27 +5,48 @@
 const CURRENT_FILE = 'index.php';
 let paymentPollingIntervalId = null; // Variable for polling timer
 const POLLING_INTERVAL_MS = 5000; // Check every 5 seconds
-const TOKEN_RATE = 1000.00; // Make sure this matches config.php
+// TOKEN_RATE is loaded from config.php in views/dashboard.php
+// const TOKEN_RATE = 1000.00; 
 
 /** Utility for displaying non-blocking toast notifications. */
 function showToast(message, type) {
     const toastContainer = $('#toast-container');
-    const toast = $('<div>', { class: 'p-4 mb-2 rounded-xl shadow-lg text-white transition-opacity duration-300 ease-in-out opacity-0 translate-x-full'});
+    const toast = $('<div>', { class: 'p-4 mb-2 rounded-xl shadow-lg text-white transition-all duration-300 ease-in-out opacity-0 translate-x-full'});
     let colorClass = '';
-    if (type === 'success') colorClass = 'bg-emerald-600'; else if (type === 'error') colorClass = 'bg-red-600'; else if (type === 'info') colorClass = 'bg-blue-600'; else colorClass = 'bg-yellow-600';
-    toast.addClass(colorClass).text(message); toastContainer.append(toast);
+    let iconSvg = '';
+    
+    if (type === 'success') {
+        colorClass = 'bg-emerald-600 border border-emerald-500/50';
+        iconSvg = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+    } else if (type === 'error') {
+        colorClass = 'bg-red-600 border border-red-500/50';
+        iconSvg = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+    } else {
+        colorClass = 'bg-blue-600 border border-blue-500/50';
+        iconSvg = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+    }
+    
+    toast.addClass(colorClass).html(`
+        <div class="flex items-center gap-3">
+            ${iconSvg}
+            <span class="text-sm font-medium">${message}</span>
+        </div>
+    `);
+    
+    toastContainer.append(toast);
     setTimeout(() => toast.removeClass('opacity-0 translate-x-full'), 10);
     setTimeout(() => { toast.addClass('opacity-0 translate-x-full'); setTimeout(() => toast.remove(), 300); }, 5000);
 }
+
 
 /** Copies text to the clipboard (generalized). */
 function copyToClipboard(text, elementId) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
-            showToast('✅ Copied!', 'info');
+            showToast('✅ Copied!', 'success');
             if(elementId) { const el = $(`#${elementId}`); const originalHtml = el.html(); el.html('Copied!'); setTimeout(() => el.html(originalHtml), 1500); }
         }).catch(err => { showToast('❌ Copy failed.', 'error'); console.error('Clipboard API error:', err); });
-    } else { /* Fallback */ const textArea = document.createElement("textarea"); textArea.value = text; textArea.style.position = "fixed"; document.body.appendChild(textArea); textArea.focus(); textArea.select(); try { document.execCommand('copy'); showToast('✅ Copied!', 'info'); if(elementId) { const el = $(`#${elementId}`); const originalHtml = el.html(); el.html('Copied!'); setTimeout(() => el.html(originalHtml), 1500); }} catch (err) { showToast('❌ Copy failed.', 'error'); } document.body.removeChild(textArea); }
+    } else { /* Fallback */ const textArea = document.createElement("textarea"); textArea.value = text; textArea.style.position = "fixed"; document.body.appendChild(textArea); textArea.focus(); textArea.select(); try { document.execCommand('copy'); showToast('✅ Copied!', 'success'); if(elementId) { const el = $(`#${elementId}`); const originalHtml = el.html(); el.html('Copied!'); setTimeout(() => el.html(originalHtml), 1500); }} catch (err) { showToast('❌ Copy failed.', 'error'); } document.body.removeChild(textArea); }
 }
 
 /** Copies the referral link. */
@@ -61,13 +82,21 @@ function fetchReferralStats() {
 /** Step 1: Show payment modal with currency options. */
 function showPaymentOptions(usdAmount, bonusPercent) {
     const modal = $('#payment-modal');
+    // Ensure TOKEN_RATE is available globally (it's set in dashboard.php)
+    const TOKEN_RATE = window.TOKEN_RATE || 1000.00; 
+    
     $('#mock-payment-amount').text('$' + usdAmount.toFixed(2));
     const baseTokens = usdAmount * TOKEN_RATE; const totalTokens = baseTokens + Math.floor(baseTokens * bonusPercent);
-    $('#mock-payment-tokens').text(new Intl.NumberFormat().format(totalTokens) + ' GALAXY');
+    $('#mock-payment-tokens').text(new Intl.NumberFormat().format(totalTokens) + ' <?php echo TOKEN_SYMBOL; ?>');
     modal.attr('data-usd-amount', usdAmount); modal.attr('data-bonus-percent', bonusPercent);
     $('#payment-options').removeClass('hidden'); $('#payment-processing-status').addClass('hidden'); $('#payment-details-display').addClass('hidden');
-    $('#modal-title').find('span').text('Confirm Your Purchase'); stopPaymentPolling(); modal.removeClass('hidden');
+    $('#modal-title').find('span').text('Confirm Your Purchase'); stopPaymentPolling(); 
+    
+    // Show modal using classes for animation
+    modal.removeClass('hidden').addClass('flex');
+    setTimeout(() => modal.find('.glass-card').removeClass('scale-95'), 10); // Animate in
 }
+
 
 /** Step 2: Call backend to get payment details for selected currency. */
 function confirmTokenPurchase(selectedCurrency) {
@@ -88,12 +117,12 @@ function confirmTokenPurchase(selectedCurrency) {
             } else {
                 $('#payment-spinner').addClass('hidden'); $('#payment-status-text').html(`<span class="text-red-400">❌ Error: ${response.message || 'Could not create payment.'}</span>`);
                 showToast(response.message || 'Could not create payment.', 'error');
-                setTimeout(() => { buyButtons.prop('disabled', false).removeClass('opacity-50'); modal.addClass('hidden'); $('#payment-options').removeClass('hidden'); $('#payment-processing-status').addClass('hidden'); $('#modal-title').find('span').text('Confirm Purchase'); }, 4000);
+                setTimeout(() => { buyButtons.prop('disabled', false).removeClass('opacity-50'); closePaymentModal(false); }, 4000); // Pass false to not try cancelling
             }
         },
         error: function(xhr) {
             $('#payment-spinner').addClass('hidden'); $('#payment-status-text').html('<span class="text-red-400">❌ Network Error.</span>'); showToast("Network Error.", 'error'); buyButtons.prop('disabled', false).removeClass('opacity-50');
-            $('#payment-options').removeClass('hidden'); $('#payment-processing-status').addClass('hidden'); $('#modal-title').find('span').text('Confirm Purchase');
+            closePaymentModal(false); // Pass false to not try cancelling
         }
     });
 }
@@ -108,6 +137,7 @@ function displayPaymentDetails(address, amount, currency, transactionId) {
     $('#copy-address-btn').html(copyIconSvg).attr('onclick', `copyToClipboard('${address}', 'copy-address-btn')`);
     let qrData = address;
     if (currencyUpper === 'TRX' || currencyUpper === 'USDTTRC20') { qrData = `tron:${address}?amount=${amount}`; }
+    else if (currencyUpper === 'USDTBSC') { qrData = `bep20:${address}?amount=${amount}`; }
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(qrData)}`;
     $('#payment-qr-code').html(`<img src="${qrCodeUrl}" alt="QR Code" class="mx-auto border-4 border-white/50 rounded-lg shadow-lg">`);
     $('#payment-instructions').html(`<span id="polling-status">Waiting for confirmation...</span><span class="inline-block animate-pulse delay-100">.</span><span class="inline-block animate-pulse delay-200">.</span><span class="inline-block animate-pulse delay-300">.</span>`);
@@ -119,7 +149,6 @@ function startPaymentPolling(transactionId) {
     stopPaymentPolling(); if (!transactionId) { console.error("No tx ID for polling."); return; }
     console.log(`Start poll tx: ${transactionId}`);
     paymentPollingIntervalId = setInterval(() => { checkPaymentStatus(transactionId); }, POLLING_INTERVAL_MS);
-    // No need to store tx_id on modal anymore, it's passed directly
 }
 
 /** Stops payment status polling. */
@@ -147,12 +176,8 @@ function checkPaymentStatus(transactionId) {
                     if (typeof fetchDashboardActivity === 'function') fetchDashboardActivity(); // Refresh dashboard activity too
                     if (typeof fetchTransactionHistory === 'function') fetchTransactionHistory(); 
                     setTimeout(() => { 
-                        modal.addClass('hidden'); 
+                        closePaymentModal(false); // Pass false to not try cancelling
                         buyButtons.prop('disabled', false).removeClass('opacity-50'); 
-                        $('#payment-options').removeClass('hidden'); 
-                        $('#payment-processing-status').addClass('hidden').find('#payment-spinner').removeClass('hidden'); 
-                        $('#payment-details-display').addClass('hidden'); 
-                        $('#modal-title').find('span').text('Confirm Purchase'); 
                     }, 3500);
                 } else if (status === 'Failed') {
                     stopPaymentPolling();
@@ -162,13 +187,8 @@ function checkPaymentStatus(transactionId) {
                     $('#modal-title').find('span').text('Payment Failed'); 
                     showToast('❌ Payment Failed.', 'error'); 
                     buyButtons.prop('disabled', false).removeClass('opacity-50');
-                     // Optionally close modal after showing failed status
                     setTimeout(() => {
-                        modal.addClass('hidden');
-                        $('#payment-options').removeClass('hidden'); 
-                        $('#payment-processing-status').addClass('hidden').find('#payment-spinner').removeClass('hidden'); 
-                        $('#payment-details-display').addClass('hidden'); 
-                        $('#modal-title').find('span').text('Confirm Purchase');
+                        closePaymentModal(false); // Pass false to not try cancelling
                     }, 4000); 
                 } else { /* Still Processing */ 
                     console.log(`Status: ${status}, polling...`); 
@@ -182,13 +202,13 @@ function checkPaymentStatus(transactionId) {
 }
 
 /** Function to close the payment modal and potentially cancel the payment. */
-function closePaymentModal() {
+function closePaymentModal(tryCancel = true) {
     const modal = $('#payment-modal');
     const transactionId = modal.attr('data-transaction-id');
     
     stopPaymentPolling(); // Always stop polling
 
-    if (transactionId) {
+    if (tryCancel && transactionId) {
         console.log(`User closed modal for TxID: ${transactionId}. Attempting cancellation.`);
         // Make AJAX call to backend to mark as Failed IF still Processing
         $.ajax({
@@ -210,19 +230,17 @@ function closePaymentModal() {
                     if (typeof fetchTransactionHistory === 'function') fetchTransactionHistory();
                 } else {
                     console.error(`Cancellation failed for TxID ${transactionId}: ${response.message}`);
-                    // Don't show error to user, just log it. Maybe IPN already completed it.
                 }
             },
             error: function() {
                 console.error(`Network error during cancellation attempt for TxID ${transactionId}.`);
             },
             complete: function() {
-                // Regardless of cancellation success/failure, hide the modal and reset UI
                 hideAndResetModal();
             }
         });
     } else {
-         // If no transaction ID (e.g., closed before confirming currency), just hide
+         // If no transaction ID or tryCancel is false, just hide
         hideAndResetModal();
     }
 }
@@ -230,47 +248,46 @@ function closePaymentModal() {
 // --- NEW HELPER: Hides and resets the modal UI ---
 function hideAndResetModal() {
     const modal = $('#payment-modal');
-    modal.addClass('hidden');
+    
+    // Animate out
+    modal.find('.glass-card').addClass('scale-95');
+    modal.addClass('hidden').removeClass('flex'); // Hide it
+    
     modal.removeAttr('data-transaction-id'); // Clear tx_id
     $('button[onclick^="showPaymentOptions"]').prop('disabled', false).removeClass('opacity-50');
     
-    // Reset modal content to initial state
-    $('#payment-options').removeClass('hidden'); 
-    $('#payment-processing-status').addClass('hidden').html(`
-        <div id="payment-spinner" class="animate-spin inline-block w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full mb-4"></div>
-        <p id="payment-status-text" class="text-gray-400 text-sm">Creating payment request...</p>
-    `); // Restore spinner and text
-    $('#payment-details-display').addClass('hidden'); 
-    $('#modal-title').find('span').text('Confirm Purchase');
+    // Reset modal content to initial state after a short delay
+    setTimeout(() => {
+        $('#payment-options').removeClass('hidden'); 
+        $('#payment-processing-status').addClass('hidden').html(`
+            <div id="payment-spinner" class="animate-spin inline-block w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full mb-4"></div>
+            <p id="payment-status-text" class="text-gray-400 text-sm">Creating payment request...</p>
+        `); // Restore spinner and text
+        $('#payment-details-display').addClass('hidden'); 
+        $('#modal-title').find('span').text('Confirm Purchase');
+    }, 300); // Wait for fade out
 }
 
 
 // --- Document Ready / Initialization ---
 $(document).ready(function() {
     // Export functions
-    window.copyReferralLink = copyReferralLink; window.setButtonLoading = setButtonLoading; window.fetchBalance = fetchBalance; window.fetchReferralStats = fetchReferralStats;
-    window.showPaymentOptions = showPaymentOptions; window.confirmTokenPurchase = confirmTokenPurchase; window.displayPaymentDetails = displayPaymentDetails;
-    window.copyToClipboard = copyToClipboard; window.closePaymentModal = closePaymentModal;
+    window.copyReferralLink = copyReferralLink; 
+    window.setButtonLoading = setButtonLoading; 
+    window.fetchBalance = fetchBalance; 
+    window.fetchReferralStats = fetchReferralStats;
+    window.showPaymentOptions = showPaymentOptions; 
+    window.confirmTokenPurchase = confirmTokenPurchase; 
+    window.displayPaymentDetails = displayPaymentDetails;
+    window.copyToClipboard = copyToClipboard; 
+    window.closePaymentModal = closePaymentModal;
 
     // --- Init Checks ---
     if ($('#token-balance').length) { fetchBalance(); } 
     if ($('#dashboard-referral-earnings').length) { fetchReferralStats(); }
-     if ($('#form-login').length) { 
-         if(typeof showAuthForm === 'function') { 
-            const urlParams = new URLSearchParams(window.location.search); 
-            const ref = urlParams.get('ref'); 
-            const loginParam = urlParams.get('login'); // Check for ?login=1
-
-            if (ref) { 
-                $('#referrer_id').val(ref); 
-                showAuthForm('register'); 
-            } else if (loginParam) {
-                 showAuthForm('login'); // Show login if ?login=1
-            } else {
-                 showAuthForm('register'); // Default to register if not logged in and no params
-            }
-        } else { console.error("showAuthForm missing."); }
-    }
+    
+    // This logic is now handled in index.php's inline script
+    // if ($('#form-login').length) { ... }
 
     // --- Form Handlers ---
 
