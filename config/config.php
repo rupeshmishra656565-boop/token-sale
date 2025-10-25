@@ -15,13 +15,13 @@ define('NOWPAYMENTS_API_URL', 'https://api.nowpayments.io/v1');
 // --- Token Constants ---
 define('KYC_BONUS', 1000.00);
 define('REFERRAL_BONUS', 1000.00);
-define('TOKEN_RATE', 1000.00);
+define('TOKEN_RATE', 1000.00); // 1000 PITH per 1 USD
+define('TOKEN_SYMBOL', 'PITH'); // Define token symbol
+define('TOKEN_NAME', 'PITHOS'); // Define token name
 
 // --- Application Constants ---
 define('SITE_URL', 'http://localhost/TokenSale/public/'); // Keep localhost for local dev, ngrok for testing IPN
 define('IPN_URL', SITE_URL . 'ipn_listener.php');
 define('APP_NAME', 'PITHOS Protocol');
-
-// --- Email Configuration REMOVED ---
 
 ?>
