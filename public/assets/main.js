@@ -83,11 +83,14 @@ function fetchReferralStats() {
 function showPaymentOptions(usdAmount, bonusPercent) {
     const modal = $('#payment-modal');
     // Ensure TOKEN_RATE is available globally (it's set in dashboard.php)
-    const TOKEN_RATE = window.TOKEN_RATE || 1000.00; 
+    const TOKEN_RATE = window.TOKEN_RATE || 1000.00;
+    const TOKEN_SYMBOL = window.TOKEN_SYMBOL || 'TOKEN'; // Use the global JS variable 
     
     $('#mock-payment-amount').text('$' + usdAmount.toFixed(2));
     const baseTokens = usdAmount * TOKEN_RATE; const totalTokens = baseTokens + Math.floor(baseTokens * bonusPercent);
-    $('#mock-payment-tokens').text(new Intl.NumberFormat().format(totalTokens) + ' <?php echo TOKEN_SYMBOL; ?>');
+   // Ensure TOKEN_RATE and TOKEN_SYMBOL are available globally (set in dashboard.php)
+   // ... inside showPaymentOptions function ...
+    $('#mock-payment-tokens').text(new Intl.NumberFormat().format(totalTokens) + ' ' + TOKEN_SYMBOL); // Use the JS variable
     modal.attr('data-usd-amount', usdAmount); modal.attr('data-bonus-percent', bonusPercent);
     $('#payment-options').removeClass('hidden'); $('#payment-processing-status').addClass('hidden'); $('#payment-details-display').addClass('hidden');
     $('#modal-title').find('span').text('Confirm Your Purchase'); stopPaymentPolling(); 

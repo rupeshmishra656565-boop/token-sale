@@ -2,10 +2,10 @@
 // Configuration File for PITHOS Protocol Token Sale
 
 // --- Database Credentials ---
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', ''); // <-- Make sure this is your correct XAMPP MySQL password
-define('DB_NAME', 'token_sale');
+define('DB_HOST', 'db5018880173.hosting-data.io');
+define('DB_USER', 'dbu173646');
+define('DB_PASS', 'Rupesh@6508'); // <-- Make sure this is your correct XAMPP MySQL password
+define('DB_NAME', 'dbs14896832');
 
 // --- NowPayments Integration ---
 define('NOWPAYMENTS_API_KEY', '3ESK0R8-N5X42DC-GT0E6D9-3EY9SG7'); // Use your real key

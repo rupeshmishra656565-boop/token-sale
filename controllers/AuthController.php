@@ -612,41 +612,140 @@ class AuthController {
 
     // --- Payment Flow ---
 
-    // --- createNowPaymentsInvoice (No changes needed, already sets 'Processing') ---
     public function createNowPaymentsInvoice($data) {
         if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Auth required.']; }
-        $userId = $_SESSION['user_id']; $usdAmount = filter_var($data['usd_amount'], FILTER_VALIDATE_FLOAT); $bonusPercent = filter_var($data['bonus_percent'], FILTER_VALIDATE_FLOAT); $payCurrency = filter_var($data['pay_currency'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $planKey = 'CUSTOM'; if ($usdAmount == 15 && $bonusPercent == 0) $planKey = 'STARTER'; else if ($usdAmount == 100 && $bonusPercent == 0.25) $planKey = 'PRO'; else if ($usdAmount == 50 && $bonusPercent == 0.10) $planKey = 'ENTERPRISE';
-        if (!$usdAmount || $usdAmount <= 0) { return ['success' => false, 'message' => 'Invalid amount.']; } if (empty($payCurrency)) { return ['success' => false, 'message' => 'No currency selected.']; }
-        $allowed_currencies = ['usdttrc20', 'usdtbsc', 'trx']; if (!in_array($payCurrency, $allowed_currencies)) { return ['success' => false, 'message' => 'Invalid currency.']; }
-        $baseTokens = $usdAmount * TOKEN_RATE; $totalTokens = $baseTokens + ($baseTokens * $bonusPercent); $orderId = $userId . '-' . time(); $description = "Purchase of " . number_format($totalTokens) . " GALAXY tokens";
-        $transaction_id = null; $payment_record_id = null;
-        $initialStatus = 'Processing'; 
+        $userId = $_SESSION['user_id'];
+        // --- Store the original amount the user selected ---
+        $originalUsdAmount = filter_var($data['usd_amount'], FILTER_VALIDATE_FLOAT);
+        // --- Use the original amount for bonus calculation ---
+        $bonusPercent = filter_var($data['bonus_percent'], FILTER_VALIDATE_FLOAT);
+        $payCurrency = filter_var($data['pay_currency'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+        // Plan key logic still uses the original amount
+        $planKey = 'CUSTOM';
+        if ($originalUsdAmount == 10 && $bonusPercent == 0) {
+             $planKey = 'STARTER';
+        } elseif ($originalUsdAmount == 100 && $bonusPercent == 0.25) {
+            $planKey = 'PRO';
+        } elseif ($originalUsdAmount == 50 && $bonusPercent == 0.10) {
+            $planKey = 'ENTERPRISE';
+        }
+
+        // Validate the original amount
+        if (!$originalUsdAmount || $originalUsdAmount <= 0) { return ['success' => false, 'message' => 'Invalid amount.']; }
+        if (empty($payCurrency)) { return ['success' => false, 'message' => 'No currency selected.']; }
+
+        $allowed_currencies = ['usdttrc20', 'usdtbsc', 'trx'];
+        if (!in_array($payCurrency, $allowed_currencies)) { return ['success' => false, 'message' => 'Invalid currency.']; }
+
+        // --- Calculate estimated fee and the amount to send to the API ---
+        // !!! IMPORTANT: Adjust these fee values based on NowPayments actual fees !!!
+        $estimatedFeePercentage = 0.01; // Example: 1% variable fee
+        $estimatedFixedFee = 0.05;      // Example: $0.05 fixed fee (adjust if needed, might be 0)
+
+        // Calculate the amount to request from the user via the API
+        $usdAmountToSendToApi = $originalUsdAmount + ($originalUsdAmount * $estimatedFeePercentage) + $estimatedFixedFee;
+        // Ensure it has only 2 decimal places for the API
+        $usdAmountToSendToApi = round($usdAmountToSendToApi, 2);
+        // --- End Fee Calculation ---
+
+
+        // --- Calculate tokens based on the ORIGINAL amount ---
+        $baseTokens = $originalUsdAmount * TOKEN_RATE;
+        $totalTokens = $baseTokens + ($baseTokens * $bonusPercent);
+        // --- End Token Calculation ---
+
+        $orderId = $userId . '-' . time();
+        $description = "Purchase of " . number_format($totalTokens) . " " . TOKEN_SYMBOL . " tokens";
+        $transaction_id = null;
+        $payment_record_id = null;
+        $initialStatus = 'Processing';
+
         try {
             $this->pdo->beginTransaction();
-            $stmtTx = $this->pdo->prepare("INSERT INTO transactions (user_id, type, amount, status, details) VALUES (?, 'PURCHASE', ?, ?, ?)"); 
-            $stmtTx->execute([$userId, $totalTokens, $initialStatus, $orderId]); 
-            $transaction_id = $this->pdo->lastInsertId(); 
+
+            // Store the transaction with the actual tokens the user gets
+            $stmtTx = $this->pdo->prepare("INSERT INTO transactions (user_id, type, amount, status, details) VALUES (?, 'PURCHASE', ?, ?, ?)");
+            $stmtTx->execute([$userId, $totalTokens, $initialStatus, $orderId]);
+            $transaction_id = $this->pdo->lastInsertId();
             if (!$transaction_id) { $this->pdo->rollBack(); return ['success' => false, 'message' => 'DB error (TX).']; }
-            $stmtPay = $this->pdo->prepare("INSERT INTO payments (user_id, order_id, plan_key, usd_amount, tokens, pay_currency, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())"); 
-            $stmtPay->execute([$userId, $orderId, $planKey, $usdAmount, $totalTokens, $payCurrency, $initialStatus]); 
-            $payment_record_id = $this->pdo->lastInsertId(); 
+
+            // Store payment record with original amount and tokens
+            $stmtPay = $this->pdo->prepare("INSERT INTO payments (user_id, order_id, plan_key, usd_amount, tokens, pay_currency, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+            // Store the ORIGINAL USD amount here for your records
+            $stmtPay->execute([$userId, $orderId, $planKey, $originalUsdAmount, $totalTokens, $payCurrency, $initialStatus]);
+            $payment_record_id = $this->pdo->lastInsertId();
             if (!$payment_record_id) { $this->pdo->rollBack(); return ['success' => false, 'message' => 'DB error (PAY).']; }
-            $payload = ['price_amount' => $usdAmount, 'price_currency' => 'usd', 'pay_currency' => $payCurrency, 'order_id' => $orderId, 'order_description' => $description, 'ipn_callback_url' => IPN_URL, 'success_url' => SITE_URL . '?p=wallet&payment=success&orderId=' . $orderId, 'cancel_url' => SITE_URL . '?p=dashboard&payment=cancelled'];
-            $ch = curl_init(); 
-            curl_setopt($ch, CURLOPT_URL, NOWPAYMENTS_API_URL . '/payment'); curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); curl_setopt($ch, CURLOPT_POST, 1); curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload)); curl_setopt($ch, CURLOPT_HTTPHEADER, ['x-api-key: ' . NOWPAYMENTS_API_KEY, 'Content-Type: application/json']);
-            $response = curl_exec($ch); $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE); $curl_error = curl_error($ch); curl_close($ch);
+
+            // --- Use the ADJUSTED amount in the API payload ---
+            $payload = [
+                'price_amount' => $usdAmountToSendToApi, // Send amount + estimated fee
+                'price_currency' => 'usd',
+                'pay_currency' => $payCurrency,
+                'order_id' => $orderId,
+                'order_description' => $description,
+                'ipn_callback_url' => IPN_URL,
+                'success_url' => SITE_URL . '?p=wallet&payment=success&orderId=' . $orderId,
+                'cancel_url' => SITE_URL . '?p=dashboard&payment=cancelled'
+                // No partially_paid needed here
+            ];
+            // --- End Payload Update ---
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, NOWPAYMENTS_API_URL . '/payment');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'x-api-key: ' . NOWPAYMENTS_API_KEY,
+                'Content-Type: application/json'
+            ]);
+
+            $response = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curl_error = curl_error($ch);
+            curl_close($ch);
+
             if ($http_code == 201 || $http_code == 200) {
                 $responseData = json_decode($response, true);
                 if (isset($responseData['pay_address']) && isset($responseData['pay_amount'])) {
                     $gatewayPaymentId = $responseData['payment_id'] ?? null;
-                    if ($gatewayPaymentId && $payment_record_id) { $stmtUpdatePayId = $this->pdo->prepare("UPDATE payments SET gateway_payment_id = ?, updated_at = NOW() WHERE id = ?"); $stmtUpdatePayId->execute([$gatewayPaymentId, $payment_record_id]); }
+                    if ($gatewayPaymentId && $payment_record_id) {
+                        $stmtUpdatePayId = $this->pdo->prepare("UPDATE payments SET gateway_payment_id = ?, updated_at = NOW() WHERE id = ?");
+                        $stmtUpdatePayId->execute([$gatewayPaymentId, $payment_record_id]);
+                    }
                     $this->pdo->commit();
-                    return ['success' => true, 'transaction_id' => $transaction_id, 'pay_address' => $responseData['pay_address'], 'pay_amount' => $responseData['pay_amount'], 'pay_currency' => $responseData['pay_currency'] ?? $payCurrency];
-                } else { $this->pdo->rollBack(); error_log("NP Response Missing Details: " . $response); return ['success' => false, 'message' => 'Gateway Error: Invalid response structure: ' . $response]; }
+                    // Return the details needed for the user to pay the *adjusted* crypto amount
+                    return [
+                        'success' => true,
+                        'transaction_id' => $transaction_id,
+                        'pay_address' => $responseData['pay_address'],
+                        'pay_amount' => $responseData['pay_amount'], // This will be the crypto equivalent of usdAmountToSendToApi
+                        'pay_currency' => $responseData['pay_currency'] ?? $payCurrency
+                    ];
+                } else {
+                    $this->pdo->rollBack();
+                    error_log("NP Response Missing Details: " . $response);
+                    return ['success' => false, 'message' => 'Gateway Error: Invalid response structure: ' . $response];
+                }
             }
-            $this->pdo->rollBack(); $errorData = json_decode($response, true); $errorMessage = $errorData['message'] ?? $response ?? "API error (HTTP: $http_code)"; if (!empty($curl_error)) { $errorMessage = "cURL Error: " . $curl_error; } error_log("NP API Error: " . $errorMessage); return ['success' => false, 'message' => 'Gateway Error: ' . $errorMessage];
-        } catch (PDOException $e) { if ($this->pdo->inTransaction()) { $this->pdo->rollBack(); } error_log("Create Invoice DB Error: " . $e->getMessage()); return ['success' => false, 'message' => 'Database error.']; }
+
+            $this->pdo->rollBack();
+            $errorData = json_decode($response, true);
+            $errorMessage = $errorData['message'] ?? $response ?? "API error (HTTP: $http_code)";
+            if (!empty($curl_error)) {
+                $errorMessage = "cURL Error: " . $curl_error;
+            }
+            error_log("NP API Error: " . $errorMessage);
+            return ['success' => false, 'message' => 'Gateway Error: ' . $errorMessage];
+
+        } catch (PDOException $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log("Create Invoice DB Error: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Database error.'];
+        }
     }
 
     // --- getPaymentStatus (No changes needed) ---
