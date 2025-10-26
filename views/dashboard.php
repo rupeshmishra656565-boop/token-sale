@@ -27,7 +27,7 @@
                     <div class="border-l border-white/10 h-10"></div>
                     <div>
                         <p class="text-gray-400 text-xs uppercase tracking-wider mb-1">Tokens Received</p>
-                        <p id="mock-payment-tokens" class="text-2xl font-bold text-yellow-400">0 GALAXY</p>
+                        <p id="mock-payment-tokens" class="text-2xl font-bold text-yellow-400">0 PITHOS</p>
                     </div>
                 </div>
             </div>
@@ -100,7 +100,7 @@
                 </div>
             </div>
             <div class="text-3xl md:text-4xl font-bold text-white mt-3 font-heading"><span id="token-balance" class="animate-pulse">---</span></div>
-            <div class="text-xs text-gray-400">GALAXY Tokens</div>
+            <div class="text-xs text-gray-400">PITHOS Tokens</div>
         </div>
 
         <div class="glass-card p-5 shadow-lg group transition-all duration-300 hover:scale-[1.03] hover:border-yellow-500/50">
@@ -111,7 +111,7 @@
                 </div>
             </div>
             <div class="text-3xl md:text-4xl font-bold text-yellow-400 mt-3 font-heading"><span id="dashboard-referral-earnings" class="animate-pulse">0.00</span></div>
-            <div class="text-xs text-gray-400">Total GALAXY Earned</div>
+            <div class="text-xs text-gray-400">Total PITHOS Earned</div>
         </div>
 
         <div class="glass-card p-5 shadow-lg group transition-all duration-300 hover:scale-[1.03] hover:border-cyan-500/50">
@@ -226,7 +226,7 @@
                         </div>
                         <h2 class="text-xl font-bold font-heading text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500"> Referral System </h2>
                     </div>
-                    <p class="text-gray-300 mb-4 text-sm">Earn <strong class="text-yellow-400"><?php echo number_format(REFERRAL_BONUS); ?> GALAXY</strong> for each friend who joins!</p>
+                    <p class="text-gray-300 mb-4 text-sm">Earn <strong class="text-yellow-400"><?php echo number_format(REFERRAL_BONUS); ?> PITHOS</strong> for each friend who joins!</p>
                     <div class="space-y-3">
                         <label for="referral-link-input" class="text-sm font-semibold text-gray-400">Your Unique Link:</label>
                         <input type="text" id="referral-link-input" class="input-field !text-xs !py-3 !bg-black/40" readonly value="<?php echo 'http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . strtok($_SERVER['REQUEST_URI'], '?') . '?ref=' . ($_SESSION['user_id'] ?? '1'); ?>">

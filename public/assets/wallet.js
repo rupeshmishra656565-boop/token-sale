@@ -211,4 +211,3 @@ $(document).ready(function() {
     fetchDetailedBalance(); // Fetch detailed balances on page load
     fetchTransactionHistory(); // Fetch history on page load
 });
-

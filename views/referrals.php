@@ -35,7 +35,7 @@
                 </div>
             </div>
             <div class="text-3xl md:text-4xl font-bold text-emerald-400 mt-3 font-heading"><span id="total-earnings" class="animate-pulse">...</span></div>
-            <div class="text-xs text-gray-400">GALAXY Tokens</div>
+            <div class="text-xs text-gray-400">PITHOS Tokens</div>
         </div>
         
         <div class="glass-card p-5 shadow-lg group transition-all duration-300 hover:scale-[1.03] hover:border-purple-500/50">

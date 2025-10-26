@@ -9,7 +9,7 @@
             <h1 class="text-3xl md:text-4xl font-bold font-heading mb-2">
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">My Wallet</span>
             </h1>
-            <p class="text-base md:text-lg text-gray-400">Manage your GALAXY balance and transactions</p>
+            <p class="text-base md:text-lg text-gray-400">Manage your PITHOS balance and transactions</p>
         </div>
     </div>
 
@@ -33,7 +33,7 @@
                     
                     <div class="text-4xl font-extrabold font-heading mb-4">
                         <span id="total-balance" class="animate-pulse text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-cyan-400 to-purple-400">---</span>
-                         <span class="text-2xl text-gray-400 font-semibold align-baseline ml-1">GALAXY</span>
+                         <span class="text-2xl text-gray-400 font-semibold align-baseline ml-1">PITHOS</span>
                     </div>
                    
                     <!-- Detailed Balance Breakdown -->
@@ -88,7 +88,7 @@
                 <div class="space-y-4">
                     <div class="input-group">
                         <input type="number" id="withdraw-amount" name="amount" placeholder=" " required step="0.01" min="1" class="input-field peer !bg-black/40">
-                        <label for="withdraw-amount" class="peer-label">Amount (GALAXY)</label>
+                        <label for="withdraw-amount" class="peer-label">Amount (PITHOS)</label>
                         <p class="text-xs text-gray-500 mt-1">Enter amount from your withdrawable balance.</p>
                     </div>
 
@@ -222,4 +222,3 @@
         setInterval(updateUSDValue, 2000); 
     });
 </script>
-
