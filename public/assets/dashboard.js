@@ -85,6 +85,34 @@ $(document).ready(function() {
             }
         });
     }
+  
+  
+  
+    // Function to copy the token contract address
+function copyTokenAddress() {
+    const addressElement = document.getElementById('token-contract-address');
+    if (addressElement) {
+        const address = addressElement.innerText || addressElement.textContent;
+        // Use the globally available copyToClipboard function from main.js
+        if (typeof window.copyToClipboard === 'function') {
+            window.copyToClipboard(address, 'copy-address-btn-token-text'); // Pass the button text ID
+        } else {
+            // Basic fallback if copyToClipboard isn't global for some reason
+            navigator.clipboard.writeText(address).then(() => {
+                const btnText = $('#copy-address-btn-token-text');
+                const original = btnText.text();
+                btnText.text('Copied!');
+                if(window.showToast) window.showToast('✅ Address Copied!', 'success');
+                setTimeout(() => btnText.text(original), 2000);
+            }).catch(err => {
+                 if(window.showToast) window.showToast('❌ Copy Failed', 'error');
+                 console.error("Copy failed: ", err);
+            });
+        }
+    }
+}
+// Make it globally accessible if it's outside document.ready
+window.copyTokenAddress = copyTokenAddress;
 
     // Run on page load
     fetchDashboardActivity();

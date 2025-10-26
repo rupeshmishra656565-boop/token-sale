@@ -246,29 +246,21 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
 
-                    <div
-                        class="glass-card p-6 group transition-all duration-300 hover:shadow-2xl hover:shadow-purple-900/50 hover:-translate-y-1">
+                    <div class="glass-card p-6 group transition-all duration-300 hover:shadow-2xl hover:shadow-purple-900/50 hover:-translate-y-1">
                         <div class="flex items-center gap-3 mb-4">
-                            <div class="p-2.5 bg-purple-500/20 rounded-xl text-purple-400"><svg class="w-5 h-5"
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z">
-                                    </path>
-                                </svg></div>
+                            <div class="p-2.5 bg-purple-500/20 rounded-xl text-purple-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg></div>
                             <span class="font-semibold text-purple-400">STARTER</span>
                         </div>
 
-                        <h3 class="text-4xl font-extrabold font-heading mb-2 text-white">$10</h3>
+                        <h3 class="text-4xl font-extrabold font-heading mb-2 text-white">$11</h3>
                         <p class="text-gray-400 mb-6 text-sm">Perfect to get started</p>
 
-                        <div class="text-3xl font-extrabold font-heading mb-4"><span class="text-white">10,000</span>
-                            <div class="text-sm text-gray-400 font-normal mt-1">PITHOS Tokens</div>
-                        </div>
+                        <div class="text-3xl font-extrabold font-heading mb-4"><span class="text-white">11,000</span><div class="text-sm text-gray-400 font-normal mt-1">PITHOS Tokens</div></div>
 
-                        <button onclick="showPaymentOptions(10, 0)" class="btn-secondary w-full py-3 text-base"> Buy Now
-                        </button>
+                        <button onclick="showPaymentOptions(11, 0)" class="btn-secondary w-full py-3 text-base"> Buy Now </button>
                     </div>
-
+                  
+                  
                     <div
                         class="glass-card p-6 group transition-all duration-300 hover:shadow-2xl hover:shadow-cyan-900/50 hover:-translate-y-1 border-2 border-cyan-500/50 relative">
                         <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
@@ -499,68 +491,97 @@
             </section>
 
             <div class="glass-card p-6 animate-fadeIn" style="animation-delay: 600ms;">
-                <h3 class="text-xl font-bold font-heading mb-4">Quick Actions</h3>
-                <div class="space-y-3">
-                    <a href="index.php?p=wallet"
+                 <h3 class="text-xl font-bold font-heading mb-4">Quick Actions</h3>
+                 <div class="space-y-3">
+                     <a href="index.php?p=wallet"
                         class="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-200 group">
-                        <div
-                            class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center group-hover:scale-105 transition-transform flex-shrink-0">
-                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                            </svg></div>
-                        <div>
-                            <div class="font-semibold text-white text-sm">Withdraw Tokens</div>
-                            <div class="text-xs text-gray-400">Transfer to your wallet</div>
-                        </div>
-                        <svg class="w-4 h-4 text-gray-500 ml-auto group-hover:text-purple-400 transition-colors"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </a>
-                    <a href="index.php?p=referrals"
+                         <div
+                             class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center group-hover:scale-105 transition-transform flex-shrink-0">
+                             <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                     d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                             </svg></div>
+                         <div>
+                             <div class="font-semibold text-white text-sm">Withdraw Tokens</div>
+                             <div class="text-xs text-gray-400">Transfer to your wallet</div>
+                         </div>
+                         <svg class="w-4 h-4 text-gray-500 ml-auto group-hover:text-purple-400 transition-colors"
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                             </path>
+                         </svg>
+                     </a>
+                     <a href="index.php?p=referrals"
                         class="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-200 group">
-                        <div
-                            class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center group-hover:scale-105 transition-transform flex-shrink-0">
-                            <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
-                                </path>
-                            </svg></div>
-                        <div>
-                            <div class="font-semibold text-white text-sm">Referral Dashboard</div>
-                            <div class="text-xs text-gray-400">View your earnings</div>
-                        </div>
-                        <svg class="w-4 h-4 text-gray-500 ml-auto group-hover:text-yellow-400 transition-colors"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </a>
-                    <a href="index.php?p=profile"
+                         <div
+                             class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center group-hover:scale-105 transition-transform flex-shrink-0">
+                             <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                     d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                 </path>
+                             </svg></div>
+                         <div>
+                             <div class="font-semibold text-white text-sm">Referral Dashboard</div>
+                             <div class="text-xs text-gray-400">View your earnings</div>
+                         </div>
+                         <svg class="w-4 h-4 text-gray-500 ml-auto group-hover:text-yellow-400 transition-colors"
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                             </path>
+                         </svg>
+                     </a>
+                     <a href="index.php?p=profile"
                         class="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-200 group">
-                        <div
-                            class="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center group-hover:scale-105 transition-transform flex-shrink-0">
-                            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                            </svg></div>
-                        <div>
-                            <div class="font-semibold text-white text-sm">Profile Settings</div>
-                            <div class="text-xs text-gray-400">Manage your account</div>
-                        </div>
-                        <svg class="w-4 h-4 text-gray-500 ml-auto group-hover:text-cyan-400 transition-colors"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </a>
-                </div>
+                         <div
+                             class="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center group-hover:scale-105 transition-transform flex-shrink-0">
+                             <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                             </svg></div>
+                         <div>
+                             <div class="font-semibold text-white text-sm">Profile Settings</div>
+                             <div class="text-xs text-gray-400">Manage your account</div>
+                         </div>
+                         <svg class="w-4 h-4 text-gray-500 ml-auto group-hover:text-cyan-400 transition-colors"
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                             </path>
+                         </svg>
+                     </a>
+
+                     <div class="pt-3 mt-3 border-t border-white/10">
+                         <div class="flex items-center gap-3 mb-3">
+                             <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 flex-shrink-0">
+                                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                             </div>
+                             <h4 class="font-semibold text-white text-sm">Add Token to Wallet</h4>
+                         </div>
+                         <p class="text-xs text-gray-400 mb-3">Use these details for your Solana wallet (e.g., Phantom, Solflare):</p>
+                         <div class="space-y-1 text-xs mb-3">
+                            <div class="flex justify-between items-center bg-black/20 px-2 py-1 rounded">
+                                <span class="text-gray-400">Name:</span>
+                                <span class="text-white font-semibold">Pithos Protocol</span>
+                            </div>
+                             <div class="flex justify-between items-center bg-black/20 px-2 py-1 rounded">
+                                <span class="text-gray-400">Symbol:</span>
+                                <span class="text-white font-semibold font-mono">PITH</span>
+                            </div>
+                             <div class="flex justify-between items-center bg-black/20 px-2 py-1 rounded">
+                                <span class="text-gray-400">Decimals:</span>
+                                <span class="text-white font-semibold font-mono">9</span>
+                            </div>
+                             <div class="bg-black/20 px-2 py-1 rounded">
+                                <span class="text-gray-400 block mb-0.5">Contract Address (SPL):</span>
+                                <span id="token-contract-address" class="text-cyan-300 font-mono break-all">3kBw23Vxrz63qzxQfiY7XdBpLUPWwYekCxo2usL1fPtK</span>
+                            </div>
+                         </div>
+                         <button onclick="copyTokenAddress()" id="copy-address-btn-token" class="w-full bg-cyan-600/20 hover:bg-cyan-500/30 border border-cyan-500/50 text-cyan-300 hover:text-cyan-200 font-semibold py-2 px-3 rounded-lg transition duration-200 flex items-center justify-center gap-1.5 text-xs group">
+                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                             <span id="copy-address-btn-token-text">Copy Address</span>
+                         </button>
+                    </div>
+                    </div>
             </div>
-        </div>
-    </div>
-</div>
 
 <style>
 .input-field {

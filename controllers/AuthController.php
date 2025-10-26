@@ -6,7 +6,7 @@ require_once(__DIR__ . '/../core/Database.php');
 
 // --- NEW: INCLUDE PHPMAILER ---
 // Make sure this path is correct based on your installation
-require_once(__DIR__ . '/../vendor/autoload.php'); 
+require_once(__DIR__ . '/../vendor/autoload.php');
 
 use Core\Database;
 use PDO;
@@ -28,7 +28,7 @@ class AuthController {
     // --- NEW HELPER FUNCTION: To Send Email ---
     /**
      * Sends the OTP email using PHPMailer.
-     * YOU MUST CONFIGURE YOUR SMTP SETTINGS HERE.
+     * Updated with IONOS SMTP settings.
      */
     private function send_otp_email($email, $otp_code) {
         $mail = new PHPMailer(true);
@@ -38,7 +38,7 @@ class AuthController {
                 <h2>Email Verification</h2>
                 <p>Hi,</p>
                 <p>Thank you for registering with " . APP_NAME . ". Use the code below to verify your email address:</p>
-                <p style='font-size: 24px; font-weight: bold; letter-spacing: 3px; background: #f4f4f4; padding: 10px 20px; display: inline-block; border-radius: 5px;'>
+                <p style='font-size: 24px; font-weight: bold; letter-spacing: 3px; background: #f4f4f4; padding: 10px 20px; display: inline-block; border-radius: 5px; color: #333;'>
                     $otp_code
                 </p>
                 <p>This code will expire in 10 minutes.</p>
@@ -49,21 +49,25 @@ class AuthController {
         ";
 
         try {
-            // --- SERVER SETTINGS: CONFIGURE THIS ---
-            // $mail->SMTPDebug = 2;                      // Enable verbose debug output
-            $mail->isSMTP();                                // Send using SMTP
-            $mail->Host       = 'smtp.gmail.com';       // Set the SMTP server to send through
-            $mail->SMTPAuth   = true;                       // Enable SMTP authentication
-            $mail->Username   = 'pithosprotocol@gmail.com'; // SMTP username
-            $mail->Password   = 'wgeo dlrh hczx qakn';    // SMTP password
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // Enable implicit TLS encryption
-            $mail->Port       = 465;                      // TCP port to connect to
+            // --- SERVER SETTINGS: IONOS Configuration ---
+            // $mail->SMTPDebug = 2; // Keep commented out unless debugging
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.ionos.com';           // Your Outgoing server (SMTP)
+            $mail->SMTPAuth   = true;                       // Outgoing server requires authentication: Yes
+            $mail->Username   = 'support@pithosprotocol.com';   // Your User name (full email address)
+            $mail->Password   = 'Rupesh@6508';            // Your IONOS email password (Updated)
+
+            // Use TLS (as specified for outgoing port 587)
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // TLS must be activated
+            $mail->Port       = 587;                      // Your Outgoing port (TLS)
             // --- END SERVER SETTINGS ---
 
+            // Update the 'From' address as well:
+            $mail->setFrom('support@pithosprotocol.com', APP_NAME); // Your User name (full email address)
+
             //Recipients
-            $mail->setFrom('no-reply@example.com', APP_NAME); // Sender
             $mail->addAddress($email);                        // Add a recipient
-            
+
             //Content
             $mail->isHTML(true);
             $mail->Subject = $subject;
@@ -73,7 +77,7 @@ class AuthController {
             $mail->send();
             return true;
         } catch (Exception $e) {
-            error_log("PHPMailer Error: {$mail->ErrorInfo}");
+            error_log("PHPMailer OTP Error: {$mail->ErrorInfo}");
             return false;
         }
     }
@@ -106,7 +110,7 @@ class AuthController {
 
             // 3. Store OTP hash in the new table (REPLACE any existing one for this email)
             $stmtStore = $this->pdo->prepare(
-                "INSERT INTO otp_verifications (email, otp_hash, expires_at) 
+                "INSERT INTO otp_verifications (email, otp_hash, expires_at)
                  VALUES (?, ?, ?)
                  ON DUPLICATE KEY UPDATE otp_hash = ?, expires_at = ?"
             );
@@ -162,17 +166,22 @@ class AuthController {
         ";
 
         try {
-            // --- SERVER SETTINGS: Use the SAME settings ---
+             // --- SERVER SETTINGS: IONOS Configuration ---
+            // $mail->SMTPDebug = 2; // Keep commented out unless debugging
             $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';       // **REPLACE**
-            $mail->SMTPAuth   = true;
-            $mail->Username   = 'pithosprotocol@gmail.com'; // **REPLACE**
-            $mail->Password   = 'wgeo dlrh hczx qakn';    // **REPLACE**
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-            $mail->Port       = 465;                      // **REPLACE** if needed
+            $mail->Host       = 'smtp.ionos.com';           // Your Outgoing server (SMTP)
+            $mail->SMTPAuth   = true;                       // Outgoing server requires authentication: Yes
+            $mail->Username   = 'support@pithosprotocol.com';   // Your User name (full email address)
+            $mail->Password   = 'Rupesh@6508';            // Your IONOS email password (Updated)
+
+            // Use TLS (as specified for outgoing port 587)
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // TLS must be activated
+            $mail->Port       = 587;                      // Your Outgoing port (TLS)
             // --- END SERVER SETTINGS ---
 
-            $mail->setFrom('pithosprotocol@gmail.com', APP_NAME); // **REPLACE** Sender
+            // Update the 'From' address as well:
+            $mail->setFrom('support@pithosprotocol.com', APP_NAME); // Your User name (full email address)
+
             $mail->addAddress($email);
 
             $mail->isHTML(true);
@@ -190,7 +199,6 @@ class AuthController {
 
 
     // --- MODIFIED FUNCTION: Reset Password using OTP ---
-    // Renamed from resetPasswordWithToken
     public function resetPasswordWithOtp($data) {
         $email = filter_var($data['email'] ?? null, FILTER_VALIDATE_EMAIL);
         $otp_code = $data['otp_code'] ?? '';
@@ -366,18 +374,23 @@ class AuthController {
         // --- End Improved Email Body ---
 
         try {
-            // --- SERVER SETTINGS: Use the SAME settings as send_otp_email ---
+            // --- SERVER SETTINGS: IONOS Configuration ---
+            // $mail->SMTPDebug = 2; // Keep commented out unless debugging
             $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';       // **REPLACE**
-            $mail->SMTPAuth   = true;
-            $mail->Username   = 'pithosprotocol@gmail.com'; // **REPLACE**
-            $mail->Password   = 'wgeo dlrh hczx qakn';    // **REPLACE**
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-            $mail->Port       = 465;                      // **REPLACE** port if needed
+            $mail->Host       = 'smtp.ionos.com';           // Your Outgoing server (SMTP)
+            $mail->SMTPAuth   = true;                       // Outgoing server requires authentication: Yes
+            $mail->Username   = 'support@pithosprotocol.com';   // Your User name (full email address)
+            $mail->Password   = 'Rupesh@6508';            // Your IONOS email password (Updated)
+
+            // Use TLS (as specified for outgoing port 587)
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // TLS must be activated
+            $mail->Port       = 587;                      // Your Outgoing port (TLS)
             // --- END SERVER SETTINGS ---
 
+             // Update the 'From' address as well:
+            $mail->setFrom('support@pithosprotocol.com', APP_NAME); // Your User name (full email address)
+
             //Recipients
-            $mail->setFrom('pithosprotocol@gmail.com', APP_NAME); // **REPLACE** Sender
             $mail->addAddress($email, $username);             // Add recipient
 
             //Content
@@ -450,7 +463,6 @@ class AuthController {
             $this->pdo->beginTransaction();
 
             // Insert user
-            // NOTE: Corrected the INSERT statement from your provided snippet which was missing columns
             $stmtInsert = $this->pdo->prepare(
                 "INSERT INTO users (username, email, password_hash, tokens, bonus_tokens, referral_tokens, kyc_claimed, referrer_id)
                  VALUES (?, ?, ?, 0.00, ?, 0.00, TRUE, ?)"
@@ -460,18 +472,26 @@ class AuthController {
 
             // Give referral bonus
             if ($refId !== null && $refId != $newUserId) {
-                $stmtRef = $this->pdo->prepare("UPDATE users SET referral_tokens = referral_tokens + ? WHERE id = ?");
-                $stmtRef->execute([REFERRAL_BONUS, $refId]);
+                // Check if referrer exists before updating
+                $stmtCheckRef = $this->pdo->prepare("SELECT id FROM users WHERE id = ?");
+                $stmtCheckRef->execute([$refId]);
+                if ($stmtCheckRef->fetch()) {
+                    $stmtRef = $this->pdo->prepare("UPDATE users SET referral_tokens = referral_tokens + ? WHERE id = ?");
+                    $stmtRef->execute([REFERRAL_BONUS, $refId]);
+
+                     // Log referral transaction only if referrer exists
+                     $stmtLogRef = $this->pdo->prepare("INSERT INTO transactions (user_id, type, amount, status, details) VALUES (?, 'REFERRAL', ?, 'Complete', ?)");
+                     $stmtLogRef->execute([$refId, REFERRAL_BONUS, 'Referral Reward for user ' . $newUserId]);
+                } else {
+                     error_log("Referrer ID $refId not found for new user $newUserId.");
+                     // Decide if you want to proceed without the referral bonus or stop
+                }
             }
 
-            // Log transactions
+            // Log signup transaction
             $stmtLogSignup = $this->pdo->prepare("INSERT INTO transactions (user_id, type, amount, status, details) VALUES (?, 'SIGNUP', ?, 'Complete', ?)");
             $stmtLogSignup->execute([$newUserId, $initialBonus, 'Signup Bonus Credited']);
 
-            if ($refId !== null && $refId != $newUserId) {
-                 $stmtLogRef = $this->pdo->prepare("INSERT INTO transactions (user_id, type, amount, status, details) VALUES (?, 'REFERRAL', ?, 'Complete', ?)");
-                 $stmtLogRef->execute([$refId, REFERRAL_BONUS, 'Referral Reward for user ' . $newUserId]);
-            }
 
             // --- 5. Clean up OTP table ---
             $stmtDeleteOtp = $this->pdo->prepare("DELETE FROM otp_verifications WHERE email = ?");
@@ -479,41 +499,72 @@ class AuthController {
 
             $this->pdo->commit(); // Commit database changes
 
-            // --- ADDED: SEND WELCOME EMAIL ---
+            // --- SEND WELCOME EMAIL ---
             $this->send_welcome_email($email, $username);
-            // --- END ADDED ---
+            // --- END ---
 
             // Set session and return success
             $_SESSION['user_id'] = $newUserId;
             $_SESSION['username'] = $username;
-            // Updated success message to use constants for consistency
             return ['success' => true, 'message' => 'Registration successful! You received ' . number_format(KYC_BONUS) . ' Bonus ' . TOKEN_SYMBOL . ' tokens.'];
 
         } catch (PDOException $e) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) { $this->pdo->rollBack(); } // Ensure rollback on error
             error_log("Registration failed: " . $e->getMessage());
             return ['success' => false, 'message' => 'Registration failed due to a database error.'];
         }
     }
 
 
-    // --- User Login (No changes needed) ---
+    // --- User Login ---
     public function login($data) {
-        // ... (this function remains unchanged)
         $loginId = $data['login_id'] ?? ''; $password = $data['password'] ?? '';
         if (empty($loginId) || empty($password)) { return ['success' => false, 'message' => 'Credentials required.']; }
         try {
-            $stmt = $this->pdo->prepare("SELECT id, username, password_hash FROM users WHERE username = ? OR email = ?");
+            $stmt = $this->pdo->prepare("SELECT id, username, password_hash, is_admin FROM users WHERE username = ? OR email = ?"); // Added is_admin
             $stmt->execute([$loginId, $loginId]); $user = $stmt->fetch();
             if ($user && password_verify($password, $user['password_hash'])) {
-                session_regenerate_id(true); $_SESSION['user_id'] = $user['id']; $_SESSION['username'] = $user['username'];
+                session_regenerate_id(true);
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                // Check if user is admin and set admin session variable
+                if (!empty($user['is_admin']) && $user['is_admin'] == 1) { // Check if is_admin is true (e.g., 1)
+                     $_SESSION['is_admin'] = true; // Set admin flag
+                     // You might redirect admins differently or just rely on this flag elsewhere
+                } else {
+                     unset($_SESSION['is_admin']); // Ensure non-admins don't have the flag
+                }
                 return ['success' => true, 'message' => 'Login successful! Redirecting...'];
             } else { return ['success' => false, 'message' => 'Invalid username/email or password.']; }
         } catch (PDOException $e) { error_log("Login failed: " . $e->getMessage()); return ['success' => false, 'message' => 'DB error during login.']; }
     }
 
-    // ... (All other functions from AuthController.php remain the same) ...
+    // --- User Logout ---
+    public function logout() {
+        // Unset specific user session variables
+        unset($_SESSION['user_id']);
+        unset($_SESSION['username']);
+        unset($_SESSION['is_admin']); // Also unset admin flag on general logout
+        // Optionally destroy session if you want a full logout including potential admin sessions
+        // session_destroy();
+        return ['success' => true, 'message' => 'Logged out successfully.'];
+    }
 
+    // --- Update Password ---
+    public function updatePassword($data) {
+        if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Auth required.']; }
+        $userId = $_SESSION['user_id']; $currentPassword = $data['current_password'] ?? ''; $newPassword = $data['new_password'] ?? ''; $confirmPassword = $data['confirm_password'] ?? '';
+        if (empty($currentPassword) || empty($newPassword) || $newPassword !== $confirmPassword || strlen($newPassword) < 6) { return ['success' => false, 'message' => 'Invalid input. Check passwords (min 6).']; }
+        try {
+            $stmt = $this->pdo->prepare("SELECT password_hash FROM users WHERE id = ?"); $stmt->execute([$userId]); $user = $stmt->fetch();
+            if (!$user || !password_verify($currentPassword, $user['password_hash'])) { return ['success' => false, 'message' => 'Current password incorrect.']; }
+            $newPasswordHash = password_hash($newPassword, PASSWORD_DEFAULT);
+            $stmtUpdate = $this->pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?"); $stmtUpdate->execute([$newPasswordHash, $userId]);
+            return ['success' => true, 'message' => 'Password updated!'];
+        } catch (PDOException $e) { error_log("Password update failed: " . $e->getMessage()); return ['success' => false, 'message' => 'Server error updating password.']; }
+    }
+
+    // --- Payment Flow ---
 
     // --- NEW HELPER FUNCTION: Send Purchase Confirmation Email ---
     /**
@@ -562,17 +613,22 @@ class AuthController {
         ";
 
         try {
-            // --- SERVER SETTINGS: Use the SAME settings ---
+             // --- SERVER SETTINGS: IONOS Configuration ---
+            // $mail->SMTPDebug = 2; // Keep commented out unless debugging
             $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';       // **REPLACE**
-            $mail->SMTPAuth   = true;
-            $mail->Username   = 'pithosprotocol@gmail.com'; // **REPLACE**
-            $mail->Password   = 'wgeo dlrh hczx qakn';    // **REPLACE**
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-            $mail->Port       = 465;                      // **REPLACE** if needed
+            $mail->Host       = 'smtp.ionos.com';           // Your Outgoing server (SMTP)
+            $mail->SMTPAuth   = true;                       // Outgoing server requires authentication: Yes
+            $mail->Username   = 'support@pithosprotocol.com';   // Your User name (full email address)
+            $mail->Password   = 'Rupesh@6508';            // Your IONOS email password (Updated)
+
+            // Use TLS (as specified for outgoing port 587)
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // TLS must be activated
+            $mail->Port       = 587;                      // Your Outgoing port (TLS)
             // --- END SERVER SETTINGS ---
 
-            $mail->setFrom('pithosprotocol@gmail.com', APP_NAME); // **REPLACE** Sender
+            // Update the 'From' address as well:
+            $mail->setFrom('support@pithosprotocol.com', APP_NAME); // Your User name (full email address)
+
             $mail->addAddress($email, $username);
 
             $mail->isHTML(true);
@@ -589,30 +645,8 @@ class AuthController {
     }
 
 
-    
-    // --- User Logout (No changes needed) ---
-    public function logout() {
-        session_unset(); session_destroy();
-        return ['success' => true, 'message' => 'Logged out successfully.'];
-    }
-
-    // --- Update Password (No changes needed) ---
-    public function updatePassword($data) {
-        if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Auth required.']; }
-        $userId = $_SESSION['user_id']; $currentPassword = $data['current_password'] ?? ''; $newPassword = $data['new_password'] ?? ''; $confirmPassword = $data['confirm_password'] ?? '';
-        if (empty($currentPassword) || empty($newPassword) || $newPassword !== $confirmPassword || strlen($newPassword) < 6) { return ['success' => false, 'message' => 'Invalid input. Check passwords (min 6).']; }
-        try {
-            $stmt = $this->pdo->prepare("SELECT password_hash FROM users WHERE id = ?"); $stmt->execute([$userId]); $user = $stmt->fetch();
-            if (!$user || !password_verify($currentPassword, $user['password_hash'])) { return ['success' => false, 'message' => 'Current password incorrect.']; }
-            $newPasswordHash = password_hash($newPassword, PASSWORD_DEFAULT);
-            $stmtUpdate = $this->pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?"); $stmtUpdate->execute([$newPasswordHash, $userId]);
-            return ['success' => true, 'message' => 'Password updated!'];
-        } catch (PDOException $e) { error_log("Password update failed: " . $e->getMessage()); return ['success' => false, 'message' => 'Server error updating password.']; }
-    }
-
-    // --- Payment Flow ---
-
-    public function createNowPaymentsInvoice($data) {
+    // --- createNowPaymentsInvoice ---
+     public function createNowPaymentsInvoice($data) {
         if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Auth required.']; }
         $userId = $_SESSION['user_id'];
         // --- Store the original amount the user selected ---
@@ -623,7 +657,7 @@ class AuthController {
 
         // Plan key logic still uses the original amount
         $planKey = 'CUSTOM';
-        if ($originalUsdAmount == 10 && $bonusPercent == 0) {
+        if ($originalUsdAmount == 11 && $bonusPercent == 0) { // Check for $11
              $planKey = 'STARTER';
         } elseif ($originalUsdAmount == 100 && $bonusPercent == 0.25) {
             $planKey = 'PRO';
@@ -687,7 +721,6 @@ class AuthController {
                 'ipn_callback_url' => IPN_URL,
                 'success_url' => SITE_URL . '?p=wallet&payment=success&orderId=' . $orderId,
                 'cancel_url' => SITE_URL . '?p=dashboard&payment=cancelled'
-                // No partially_paid needed here
             ];
             // --- End Payload Update ---
 
@@ -748,28 +781,29 @@ class AuthController {
         }
     }
 
-    // --- getPaymentStatus (No changes needed) ---
+
+    // --- getPaymentStatus ---
     public function getPaymentStatus($data) {
-        if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Auth required.']; } 
-        $userId = $_SESSION['user_id']; 
+        if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Auth required.']; }
+        $userId = $_SESSION['user_id'];
         $transactionId = filter_var($data['transaction_id'] ?? null, FILTER_VALIDATE_INT);
         if (!$transactionId) { return ['success' => false, 'message' => 'Invalid Tx ID.']; }
-        try { 
-            $stmt = $this->pdo->prepare("SELECT status FROM transactions WHERE id = ? AND user_id = ?"); 
-            $stmt->execute([$transactionId, $userId]); 
+        try {
+            $stmt = $this->pdo->prepare("SELECT status FROM transactions WHERE id = ? AND user_id = ?");
+            $stmt->execute([$transactionId, $userId]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($result) { 
-                return ['success' => true, 'status' => $result['status']]; 
-            } else { 
-                return ['success' => false, 'message' => 'Tx not found.']; 
+            if ($result) {
+                return ['success' => true, 'status' => $result['status']];
+            } else {
+                return ['success' => false, 'message' => 'Tx not found.'];
             }
-        } catch (PDOException $e) { 
-            error_log("Get Status DB Error: " . $e->getMessage()); 
-            return ['success' => false, 'message' => 'DB error.']; 
+        } catch (PDOException $e) {
+            error_log("Get Status DB Error: " . $e->getMessage());
+            return ['success' => false, 'message' => 'DB error.'];
         }
     }
-    
-     // --- cancelPayment (No changes needed) ---
+
+     // --- cancelPayment ---
      public function cancelPayment($data) {
          if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Auth required.']; }
          $userId = $_SESSION['user_id'];
@@ -781,28 +815,42 @@ class AuthController {
 
          try {
              $this->pdo->beginTransaction();
+             // Find the order_id (details) associated with the transaction_id
              $stmtGetOrder = $this->pdo->prepare("SELECT details FROM transactions WHERE id = ? AND user_id = ? AND status = 'Processing'");
              $stmtGetOrder->execute([$transactionId, $userId]);
-             $orderId = $stmtGetOrder->fetchColumn();
+             $orderId = $stmtGetOrder->fetchColumn(); // Get the order_id which is stored in details
 
              if (!$orderId) {
+                 // If no processing transaction found for this user with this ID, no action needed or possible
                  $this->pdo->rollBack();
-                 return ['success' => true, 'message' => 'Payment already processed or not found. No action taken.'];
+                 // Check if it already failed or completed
+                 $stmtCheckStatus = $this->pdo->prepare("SELECT status FROM transactions WHERE id = ? AND user_id = ?");
+                 $stmtCheckStatus->execute([$transactionId, $userId]);
+                 $currentStatus = $stmtCheckStatus->fetchColumn();
+                 if ($currentStatus && $currentStatus !== 'Processing') {
+                      return ['success' => true, 'message' => 'Payment already ' . strtolower($currentStatus) . '. No action taken.'];
+                 } else {
+                      return ['success' => false, 'message' => 'Processing transaction not found.'];
+                 }
              }
 
+             // Update transactions table
              $stmtUpdateTx = $this->pdo->prepare("UPDATE transactions SET status = 'Failed' WHERE id = ? AND user_id = ? AND status = 'Processing'");
              $updatedTx = $stmtUpdateTx->execute([$transactionId, $userId]);
              $txRowsAffected = $stmtUpdateTx->rowCount();
 
+             // Update payments table using the order_id fetched earlier
              $stmtUpdatePay = $this->pdo->prepare("UPDATE payments SET status = 'Failed', updated_at = NOW() WHERE order_id = ? AND user_id = ? AND status = 'Processing'");
              $updatedPay = $stmtUpdatePay->execute([$orderId, $userId]);
              $payRowsAffected = $stmtUpdatePay->rowCount();
 
+             // Commit if either table was updated
              if ($txRowsAffected > 0 || $payRowsAffected > 0) {
                  $this->pdo->commit();
-                 error_log("User $userId cancelled Transaction ID: $transactionId (Order: $orderId)");
-                 return ['success' => true, 'message' => 'Payment cancelled by user.'];
+                 error_log("User $userId manually cancelled Transaction ID: $transactionId (Order: $orderId)");
+                 return ['success' => true, 'message' => 'Payment marked as cancelled.'];
              } else {
+                 // This case should technically be caught by the first check, but included for safety
                  $this->pdo->rollBack();
                  return ['success' => true, 'message' => 'Payment status was not Processing. No action taken.'];
              }
@@ -816,31 +864,98 @@ class AuthController {
 
 
     /** Handles NowPayments IPN */
-    /** Handles NowPayments IPN */
     public function handleNowPaymentsIPN() {
          error_log("====== IPN Handler Started ======");
-         // ... (Signature validation and data decoding remain the same) ...
+         $received_hmac = $_SERVER['HTTP_X_NOWPAYMENTS_SIG'] ?? '';
+         $request_json = file_get_contents('php://input');
+         $request_data = json_decode($request_json, true);
+
+         if ($request_json === false || $request_json === '' || !is_array($request_data)) {
+             error_log('IPN Error: Invalid or empty payload.');
+             http_response_code(400); // Bad Request
+             exit('IPN Error: Invalid payload.');
+         }
+         error_log("IPN Received Data: " . $request_json); // Log raw data
+
+         ksort($request_data); // Sort data alphabetically by key
+         $sorted_request_json = json_encode($request_data, JSON_UNESCAPED_SLASHES); // Regenerate JSON from sorted data
+
+         $hmac = hash_hmac('sha512', $sorted_request_json, trim(NOWPAYMENTS_IPN_SECRET));
+
+         if ($hmac !== $received_hmac) {
+             error_log("IPN HMAC verification failed.");
+             error_log("Received HMAC: " . $received_hmac);
+             error_log("Calculated HMAC: " . $hmac);
+             error_log("Sorted Payload: " . $sorted_request_json);
+             http_response_code(401); // Unauthorized
+             exit('IPN Error: HMAC verification failed.');
+         }
+         error_log("IPN HMAC verification successful.");
+
+         // Proceed with verified data
+         $payment_id = $request_data['payment_id'] ?? null;
+         $payment_status = $request_data['payment_status'] ?? 'unknown';
+         $orderId = $request_data['order_id'] ?? null; // Use order_id from IPN
+         $pay_amount = $request_data['pay_amount'] ?? null; // Amount in crypto paid
+         $pay_currency = $request_data['pay_currency'] ?? null;
+         $actually_paid = $request_data['actually_paid'] ?? null; // Actual amount received by NowPayments
+         $price_amount = $request_data['price_amount'] ?? null; // Original price in USD
+         $price_currency = $request_data['price_currency'] ?? null; // Should be 'usd'
+
+         if (!$orderId || !$payment_id) {
+             error_log("IPN Error: Missing order_id or payment_id in payload.");
+             http_response_code(400);
+             exit('IPN Error: Missing order data.');
+         }
+         error_log("IPN Processing Order ID: $orderId, Payment ID: $payment_id, Status: $payment_status");
+
+         // Map NowPayments statuses to your DB statuses
+         $finalDbStatus = 'Processing'; // Default
+         switch ($payment_status) {
+             case 'finished':        $finalDbStatus = 'Complete'; break;
+             case 'failed':          $finalDbStatus = 'Failed'; break;
+             case 'refunded':        $finalDbStatus = 'Failed'; break; // Treat refunded as Failed in your system
+             case 'expired':         $finalDbStatus = 'Failed'; break;
+             // Keep Processing for intermediate steps
+             case 'confirming':
+             case 'sending':
+             case 'waiting':
+             case 'confirmed':       $finalDbStatus = 'Processing'; break;
+             default:
+                 error_log("IPN Warning: Unhandled NowPayments status '$payment_status' for Order ID: $orderId. Keeping as Processing.");
+                 $finalDbStatus = 'Processing'; break;
+         }
+
          try {
-             // ... (Signature check, JSON decode) ...
-
-             $payment_status = $data['payment_status'] ?? 'unknown';
-             $orderId = $data['order_id'] ?? null;
-             // ... (other data extraction) ...
-
-             $finalDbStatus = 'Processing';
-             if ($payment_status === 'finished') { $finalDbStatus = 'Complete'; }
-             // ... (failed status handling) ...
-
-             // ... (Intermediate status handling) ...
-
              $this->pdo->beginTransaction();
 
-             // ... (UPDATE payments table) ...
-             // ... (UPDATE transactions table) ...
+             // --- Update 'payments' table ---
+             // Update status and potentially the actual amount paid
+             $sqlPay = "UPDATE payments SET status = ?, gateway_payment_id = ?, updated_at = NOW()";
+             $paramsPay = [$finalDbStatus, $payment_id];
+             if ($actually_paid !== null) {
+                 $sqlPay .= ", actual_amount_paid = ?";
+                 $paramsPay[] = $actually_paid;
+             }
+             $sqlPay .= " WHERE order_id = ? AND (status != ? OR gateway_payment_id IS NULL)"; // Only update if status changed or gateway_id was missing
+             $paramsPay[] = $orderId;
+             $paramsPay[] = $finalDbStatus; // Avoid redundant updates
 
-             // --- MODIFICATION: Credit tokens AND Send Email on Complete ---
+             $stmtPay = $this->pdo->prepare($sqlPay);
+             $updatedPay = $stmtPay->execute($paramsPay);
+             $payRowsAffected = $stmtPay->rowCount();
+
+
+             // --- Update 'transactions' table ---
+             // Find transaction_id using order_id (stored in details) and update status
+             $stmtTx = $this->pdo->prepare("UPDATE transactions SET status = ? WHERE details = ? AND type = 'PURCHASE' AND status != ?");
+             $updatedTx = $stmtTx->execute([$finalDbStatus, $orderId, $finalDbStatus]);
+             $txRowsAffected = $stmtTx->rowCount();
+
+
+             // --- Credit tokens if payment is Complete ---
              if ($finalDbStatus === 'Complete' && ($payRowsAffected > 0 || $txRowsAffected > 0)) {
-                  // Get payment data (user_id, tokens, amount, currency)
+                  // Get payment data (user_id, tokens) using order_id
                   $stmtGetData = $this->pdo->prepare("SELECT user_id, tokens, usd_amount, pay_currency FROM payments WHERE order_id = ?");
                   $stmtGetData->execute([$orderId]);
                   $paymentData = $stmtGetData->fetch();
@@ -848,15 +963,15 @@ class AuthController {
                   if ($paymentData && $paymentData['tokens'] > 0) {
                        $userId = $paymentData['user_id'];
                        $purchasedTokenAmount = $paymentData['tokens'];
-                       $usdAmountPaid = $paymentData['usd_amount']; // Get USD amount
-                       $paidCurrency = $paymentData['pay_currency'] ?? $actualPayCurrency ?? 'N/A'; // Get paid currency
+                       $originalUsdAmount = $paymentData['usd_amount']; // Fetch the original USD amount stored
+                       $currencyPaid = $paymentData['pay_currency'] ?? $pay_currency ?? 'N/A'; // Get currency used
 
-                       // Update user's token balance
+                       // Update user's token balance (using 'tokens' column for purchased tokens)
                        $stmtUser = $this->pdo->prepare("UPDATE users SET tokens = tokens + ? WHERE id = ?");
                        $updatedUser = $stmtUser->execute([$purchasedTokenAmount, $userId]);
                        error_log("IPN Credited Purchased Tokens (User: $userId, Order: $orderId): " . ($updatedUser ? 'Success' : 'FAILURE'));
 
-                       // --- NEW: Fetch User Details & Send Confirmation Email ---
+                       // --- Fetch User Details & Send Confirmation Email ---
                        if ($updatedUser) { // Only send if token update was successful
                            $stmtGetUser = $this->pdo->prepare("SELECT username, email FROM users WHERE id = ?");
                            $stmtGetUser->execute([$userId]);
@@ -866,10 +981,10 @@ class AuthController {
                                $this->send_purchase_confirmation_email(
                                    $userData['email'],
                                    $userData['username'],
-                                   $usdAmountPaid,
+                                   $originalUsdAmount, // Use the original USD amount for the email
                                    $purchasedTokenAmount,
                                    $orderId,
-                                   $paidCurrency
+                                   $currencyPaid // Use the currency recorded or from IPN
                                );
                                error_log("Purchase confirmation email initiated for User: $userId, Order: $orderId");
                            } else {
@@ -878,34 +993,48 @@ class AuthController {
                        }
                        // --- END NEW ---
 
-                  } else { error_log("IPN Error: Could not find payment data or token amount for Order ID: " . $orderId . " during Complete step."); }
+                  } else {
+                      error_log("IPN Error: Could not find payment data or token amount > 0 for Order ID: " . $orderId . " during Complete step.");
+                      // Potential issue: If tokens were already credited, this might prevent redundant credits if IPN fires twice.
+                  }
              }
-             // --- END MODIFICATION ---
 
-
-             if (($payRowsAffected > 0 || $txRowsAffected > 0)) {
+             // Commit only if something was actually updated
+             if ($payRowsAffected > 0 || $txRowsAffected > 0) {
                  $this->pdo->commit();
                  error_log("IPN Processed: Order $orderId updated to $finalDbStatus. Rows affected (Pay/Tx): $payRowsAffected/$txRowsAffected");
                  echo "IPN OK: Processed.";
              } else {
-                 $this->pdo->rollBack();
-                 // ... (No update needed log) ...
-                 echo "IPN OK: No update needed or order mismatch.";
+                 $this->pdo->rollBack(); // No changes needed, rollback (safe even if nothing happened)
+                 error_log("IPN Info: No status change or update needed for Order ID: $orderId (Current DB status likely already '$finalDbStatus').");
+                 echo "IPN OK: No update needed.";
              }
              exit();
-         } catch (\Exception $e) { /* ... error handling ... */ exit('IPN Error: Server exception.');}
+
+         } catch (PDOException $e) {
+             if ($this->pdo->inTransaction()) { $this->pdo->rollBack(); }
+             error_log("IPN DB Error for Order ID $orderId: " . $e->getMessage());
+             http_response_code(500); // Internal Server Error
+             exit('IPN Error: Database exception.');
+         } catch (\Exception $e) { // Catch broader exceptions (like email errors, though they shouldn't stop IPN)
+             if ($this->pdo->inTransaction()) { $this->pdo->rollBack(); } // Rollback DB if error occurred after starting transaction
+             error_log("IPN General Error for Order ID $orderId: " . $e->getMessage());
+             http_response_code(500);
+             exit('IPN Error: Server exception.');
+         }
     }
+
 
     // --- Other User Functions ---
 
     // --- MODIFIED: getDetailedBalance ---
     /** Fetches detailed token balances for the logged-in user. */
     public function getDetailedBalance() {
-        if (!isset($_SESSION['user_id'])) { 
-            return ['success' => false, 'message' => 'Not authenticated.']; 
+        if (!isset($_SESSION['user_id'])) {
+            return ['success' => false, 'message' => 'Not authenticated.'];
         }
         $userId = $_SESSION['user_id'];
-        
+
         try {
             // Fetch the three balance types
             $stmt = $this->pdo->prepare("SELECT tokens, bonus_tokens, referral_tokens FROM users WHERE id = ?");
@@ -940,93 +1069,121 @@ class AuthController {
         }
     }
 
-    // --- getBalance (Kept for potential navbar use - returns TOTAL balance) ---
+    // --- getBalance (Returns TOTAL balance) ---
     public function getBalance() {
-        if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Not auth.']; } 
+        if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Not auth.']; }
         $userId = $_SESSION['user_id'];
-        try { 
+        try {
             // Calculate total on the fly
-            $stmt = $this->pdo->prepare("SELECT (tokens + bonus_tokens + referral_tokens) as total_tokens FROM users WHERE id = ?"); 
-            $stmt->execute([$userId]); 
+            $stmt = $this->pdo->prepare("SELECT (tokens + bonus_tokens + referral_tokens) as total_tokens FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
             $data = $stmt->fetch();
-            if ($data) { 
-                return ['success' => true, 'balance' => number_format((float)$data['total_tokens'], 2, '.', ',')]; 
-            } else { 
-                return ['success' => false, 'message' => 'User not found.']; 
+            if ($data) {
+                return ['success' => true, 'balance' => number_format((float)$data['total_tokens'], 2, '.', ',')];
+            } else {
+                return ['success' => false, 'message' => 'User not found.'];
             }
         } catch (PDOException $e) { error_log("Get Balance failed: " . $e->getMessage()); return ['success' => false, 'message' => 'DB error.']; }
     }
-    
-    // --- getTransactionHistory (No changes needed) ---
+
+    // --- getTransactionHistory ---
     public function getTransactionHistory() {
         if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Not auth.']; } $userId = $_SESSION['user_id'];
         try { $stmt = $this->pdo->prepare("SELECT id, type, amount, status, created_at, details FROM transactions WHERE user_id = ? ORDER BY created_at DESC"); $stmt->execute([$userId]); $history = $stmt->fetchAll();
             return ['success' => true, 'history' => $history];
         } catch (PDOException $e) { error_log("Tx history failed: " . $e->getMessage()); return ['success' => false, 'message' => 'DB error.']; }
     }
-    
-    // --- getReferralHistory (No changes needed) ---
+
+    // --- getReferralHistory ---
     public function getReferralHistory() {
         if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Not auth.']; } $userId = $_SESSION['user_id'];
-        try { 
+        try {
             // Calculate earnings based on referral_tokens column now
             $stmtUser = $this->pdo->prepare("SELECT referral_tokens FROM users WHERE id = ?");
             $stmtUser->execute([$userId]);
             $userData = $stmtUser->fetch();
             $totalEarnings = $userData ? (float)$userData['referral_tokens'] : 0.00;
 
-            $stmtStats = $this->pdo->prepare("SELECT COUNT(id) as total_referrals FROM users WHERE referrer_id = ?"); 
-            $stmtStats->execute([$userId]); 
+            $stmtStats = $this->pdo->prepare("SELECT COUNT(id) as total_referrals FROM users WHERE referrer_id = ?");
+            $stmtStats->execute([$userId]);
             $stats = $stmtStats->fetch();
-            $totalReferrals = $stats['total_referrals'] ?? 0; 
-            
+            $totalReferrals = $stats['total_referrals'] ?? 0;
+
             $stmtHistory = $this->pdo->prepare("SELECT username, created_at FROM users WHERE referrer_id = ? ORDER BY created_at DESC"); $stmtHistory->execute([$userId]); $history = $stmtHistory->fetchAll();
             return ['success' => true, 'stats' => ['total_referrals' => (int)$totalReferrals, 'total_earnings' => number_format($totalEarnings, 2, '.', ',')], 'history' => $history];
         } catch (PDOException $e) { error_log("Ref history failed: " . $e->getMessage()); return ['success' => false, 'message' => 'DB error.']; }
     }
-    
-    // --- getUserDetails (No changes needed, already returns required user info) ---
+
+    // --- getUserDetails ---
      public function getUserDetails() {
          if (!isset($_SESSION['user_id'])) { return ['success' => false, 'message' => 'Not auth.']; } $userId = $_SESSION['user_id'];
          try { $stmtUser = $this->pdo->prepare("SELECT id, username, email, created_at, referrer_id FROM users WHERE id = ?"); $stmtUser->execute([$userId]); $user = $stmtUser->fetch();
              if (!$user) { return ['success' => false, 'message' => 'User not found.']; }
-             $stmtMetrics = $this->pdo->prepare("SELECT COALESCE(SUM(CASE WHEN type IN ('PURCHASE', 'SIGNUP', 'REFERRAL', 'ADJUST_IN') AND status='Complete' THEN amount ELSE 0 END), 0) AS total_acquired, COALESCE(SUM(CASE WHEN type = 'REFERRAL' AND status='Complete' THEN amount ELSE 0 END), 0) AS total_ref_earned, COALESCE(COUNT(CASE WHEN type = 'PURCHASE' AND status = 'Complete' THEN 1 ELSE NULL END), 0) AS total_purchases FROM transactions WHERE user_id = ?"); 
-             $stmtMetrics->execute([$userId]); 
+             // Refined metrics query
+             $stmtMetrics = $this->pdo->prepare("
+                SELECT
+                    COALESCE(SUM(CASE WHEN type IN ('SIGNUP', 'REFERRAL', 'ADJUST_IN') AND status='Complete' THEN amount ELSE 0 END), 0) +
+                    COALESCE((SELECT SUM(bonus_tokens) FROM users WHERE id = ?), 0) AS total_bonus_ref_earned, /* Include current bonus_tokens */
+
+                    COALESCE(SUM(CASE WHEN type = 'PURCHASE' AND status='Complete' THEN amount ELSE 0 END), 0) AS total_purchased, /* Sum of PURCHASE transactions */
+
+                    COALESCE(SUM(CASE WHEN type = 'REFERRAL' AND status='Complete' THEN amount ELSE 0 END), 0) AS total_ref_earned_tx, /* Sum of REFERRAL transactions */
+
+                    COALESCE(COUNT(CASE WHEN type = 'PURCHASE' AND status = 'Complete' THEN 1 ELSE NULL END), 0) AS total_purchases
+                FROM transactions
+                WHERE user_id = ?
+             ");
+             $stmtMetrics->execute([$userId, $userId]); // Bind user ID twice
              $metrics = $stmtMetrics->fetch();
-             $stmtRecentTx = $this->pdo->prepare("SELECT id, type, amount, status, created_at, details FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 5"); 
-             $stmtRecentTx->execute([$userId]); 
+
+             // Get recent transactions separately
+             $stmtRecentTx = $this->pdo->prepare("SELECT id, type, amount, status, created_at, details FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 5");
+             $stmtRecentTx->execute([$userId]);
              $recentTransactions = $stmtRecentTx->fetchAll();
-             $totalAcquired = (float)($metrics['total_acquired'] ?? 0); $totalRefEarned = (float)($metrics['total_ref_earned'] ?? 0); $totalPurchases = (int)($metrics['total_purchases'] ?? 0);
+
+             // Calculate net acquired based on purchase transactions + current bonus/referral tokens for display consistency
+             // Note: This relies on bonus/referral tokens in the user table being accurate sums
+             $stmtCurrentTokens = $this->pdo->prepare("SELECT tokens, bonus_tokens, referral_tokens FROM users WHERE id = ?");
+             $stmtCurrentTokens->execute([$userId]);
+             $currentTokens = $stmtCurrentTokens->fetch();
+             $netAcquired = ($currentTokens['tokens'] ?? 0) + ($currentTokens['bonus_tokens'] ?? 0) + ($currentTokens['referral_tokens'] ?? 0);
+
+             $totalPurchases = (int)($metrics['total_purchases'] ?? 0);
+             $totalRefEarned = (float)($currentTokens['referral_tokens'] ?? 0); // Use current referral balance
+
              $referrerIdValue = $user['referrer_id'] ? $user['referrer_id'] : null;
-             return ['success' => true, 
+
+             return ['success' => true,
                 'details' => [
-                    'id' => $user['id'], 'username' => $user['username'], 'email' => $user['email'], 
-                    'member_since' => date('M d, Y', strtotime($user['created_at'])), 
-                    'referrer_id' => $referrerIdValue, 
+                    'id' => $user['id'],
+                    'username' => $user['username'],
+                    'email' => $user['email'],
+                    'member_since' => date('M d, Y', strtotime($user['created_at'])),
+                    'referrer_id' => $referrerIdValue,
                     'stats' => [
-                        'tokens_acquired' => number_format($totalAcquired, 2, '.', ','), 
-                        'total_purchases' => $totalPurchases, 
-                        'referral_earnings' => number_format($totalRefEarned, 2, '.', ',')
+                        'tokens_acquired' => number_format($netAcquired, 2, '.', ','), // Display total current balance
+                        'total_purchases' => $totalPurchases,
+                        'referral_earnings' => number_format($totalRefEarned, 2, '.', ',') // Display current referral balance
                     ]
-                ], 
+                ],
                 'recent_transactions' => $recentTransactions
              ];
-         } catch (PDOException $e) { error_log("User details failed: " . $e->getMessage()); return ['success' => false, 'message' => 'DB error fetching details.']; }
+         } catch (PDOException $e) { error_log("User details failed for user $userId: " . $e->getMessage()); return ['success' => false, 'message' => 'DB error fetching details.']; }
     }
 
-    // --- MODIFIED: withdrawTokens ---
+    // --- withdrawTokens ---
     /** Handles token withdrawal request, checking against withdrawable balance. */
     public function withdrawTokens($data) {
-        if (!isset($_SESSION['user_id'])) { 
-            return ['success' => false, 'message' => 'Authentication required.']; 
+        if (!isset($_SESSION['user_id'])) {
+            return ['success' => false, 'message' => 'Authentication required.'];
         }
         $userId = $_SESSION['user_id'];
         $amount = filter_var($data['amount'], FILTER_VALIDATE_FLOAT);
         $walletAddress = filter_var($data['wallet_address'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
         // Basic validation
-        if (!$amount || $amount <= 0 || empty($walletAddress) || strlen($walletAddress) < 20) { 
-            return ['success' => false, 'message' => 'Invalid amount or wallet address provided.']; 
+        if (!$amount || $amount <= 0 || empty($walletAddress) || strlen($walletAddress) < 20) { // Basic address length check
+            return ['success' => false, 'message' => 'Invalid amount or wallet address provided.'];
         }
 
         try {
@@ -1063,6 +1220,7 @@ class AuthController {
             // Log the withdrawal transaction
             $withdrawalAmountDb = -abs($amount); // Store withdrawals as negative
             $details = "Withdrawal Request. To: " . $walletAddress;
+            // Set status to Processing (or Pending if preferred)
             $stmtLog = $this->pdo->prepare("INSERT INTO transactions (user_id, type, amount, status, details) VALUES (?, 'WITHDRAWAL', ?, 'Processing', ?)");
             $stmtLog->execute([$userId, $withdrawalAmountDb, $details]);
 
@@ -1070,10 +1228,12 @@ class AuthController {
             return ['success' => true, 'message' => 'Withdrawal requested successfully! Processing typically takes 24-48 hours.'];
 
         } catch (PDOException $e) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) { $this->pdo->rollBack(); } // Ensure rollback on error
             error_log("Withdrawal failed for user $userId: " . $e->getMessage());
             return ['success' => false, 'message' => 'A database error occurred during the withdrawal process. Please try again later.'];
         }
     }
 
+
 } // End Class
+?>
